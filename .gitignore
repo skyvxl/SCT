@@ -31,3 +31,4 @@ packaging/appimage/appimagetool*
 packaging/appimage/squashfs-root/
 packaging/appimage/build/
 
+.agents
