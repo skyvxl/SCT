@@ -1,0 +1,173 @@
+{
+  "language_name": "Русский",
+  "app": {
+    "title": "Seamless Co-op Mod Manager"
+  },
+  "nav": {
+    "home": "Главная",
+    "seamless": "Меню: Seamless Co-op",
+    "current_game": "Текущая игра",
+    "backups": "Save: Резервные копии",
+    "characters": "Список персонажей",
+    "settings": "Настройки менеджера"
+  },
+  "menu": {
+    "help": "Помощь",
+    "auto_setup": "Автоматическая установка Elden Ring Seamless Co-op и ModEngine",
+    "check_manager_updates": "Проверить наличие обновления менеджера мода",
+    "check_mod_updates": "Проверить наличие обновления Elden Ring Seamless Co-op",
+    "about": "О программе"
+  },
+  "footer": {
+    "mod_not_detected": "Elden Ring Seamless Co-op Версия: Не определена",
+    "manager_version": "Версия менеджера: {version}"
+  },
+  "common": {
+    "accept": "Принять",
+    "browse": "Обзор",
+    "delete": "Удалить",
+    "refresh": "Обновить",
+    "open_folder": "Открыть папку"
+  },
+  "about": {
+    "product_name": "Seamless Co-op Mod Manager",
+    "version": "Версия: {version}",
+    "description": "Это приложение поможет вам управлять Seamless Co-op Mod для Elden Ring.",
+    "maintainer": "Разработка и поддержка: skyvxl",
+    "based_on": "Основано на проекте 2Pz",
+    "license": "Лицензия MIT"
+  },
+  "home": {
+    "launch": "Запуск Elden Ring Seamless Co-op"
+  },
+  "seamless": {
+    "gameplay": {
+      "title": "Игровые настройки",
+      "allow_invaders": "Вторжения враждебных игроков",
+      "death_debuffs": "Негативный эффект после смерти",
+      "allow_summons": "Призыв игровых фантомов",
+      "skip_splash": "Пропустить вступительное интро",
+      "overhead": "Информационная панель игрока:",
+      "overhead_normal": "Обычная панель",
+      "overhead_empty": "Пустая панель",
+      "overhead_ping": "Сетевой пинг Игрока",
+      "overhead_soul_level": "Уровень души Игрока",
+      "overhead_deaths": "Количество смертей игрока",
+      "overhead_soul_level_and_ping": "Уровень души и сетевой пинг",
+      "volume": "Игровая громкость"
+    },
+    "scaling": {
+      "title": "Масштабирование показателей",
+      "enemy_health": "Масштабирование здоровья противника (%):",
+      "enemy_damage": "Масштабирование урона противника (%):",
+      "enemy_posture": "Масштабирование баланса противника (%):",
+      "boss_health": "Масштабирование здоровья босса (%):",
+      "boss_damage": "Масштабирование урона босса (%):",
+      "boss_posture": "Масштабирование баланса босса (%):"
+    },
+    "password": {
+      "title": "Пароль",
+      "label": "Пароль к кооперативу"
+    },
+    "save": {
+      "title": "Сохранить",
+      "extension": "Сохранить расширение файла:"
+    },
+    "language": {
+      "title": "Языки",
+      "override": "Изменить язык мода:",
+      "hint": "По умолчанию: язык вашей игры. Оставьте пустым, если не хотите изменять"
+    },
+    "reset": "Сброс настроек"
+  },
+  "current_game": {
+    "current_players": "Текущие игроки",
+    "recent_players": "Недавние игроки",
+    "username": "Имя пользователя",
+    "level": "Уровень",
+    "health": "Здоровье",
+    "date": "Дата",
+    "loading_fix": "Исправление бесконечного экрана загрузки"
+  },
+  "backups": {
+    "status_stopped": "Автоматическое резервное копирование: Не запущено",
+    "pinned": "Закрепленные резервные копии",
+    "regular": "Регулярные резервные копии",
+    "name": "Имя резервной копии",
+    "date": "Дата",
+    "save": "Сохранить резервную копию",
+    "load": "Загрузить резервную копию",
+    "start": "Запустить автоматическое резервное копирование",
+    "stop": "Остановить автоматическое резервное копирование"
+  },
+  "characters": {
+    "instructions_title": "Инструкции:",
+    "instructions": "Используйте CTRL+C для копирования и CTRL+V для вставки. Удерживайте CTRL при перетаскивании для копирования. Правый клик открывает меню персонажа.",
+    "archive": "Персонаж архивирован",
+    "game_save": "Файл сохранения игры",
+    "name": "Имя Персонажа",
+    "level": "Уровень",
+    "playtime": "Время игры",
+    "load_archive": "Загрузка архива",
+    "load_game": "Загрузить файл сохранения игры"
+  },
+  "settings": {
+    "language": {
+      "title": "Языки",
+      "label": "Выберите язык программы",
+      "russian": "Русский"
+    },
+    "game_path": {
+      "title": "Путь к папке с игрой",
+      "label": "Папка с игрой:"
+    },
+    "launcher": {
+      "title": "Seamless Co-op Запуск",
+      "executable": "Seamless Co-op исполняемый файл",
+      "auto_update": "Автоматическое обновление"
+    },
+    "steam": {
+      "title": "Steam Настройки",
+      "executable": "Steam.exe",
+      "auto_detect": "Автоматическое обнаружение",
+      "not_running": "Steam статус: Не запущен",
+      "silent": "Бесшумный запуск Steam в фоновом режиме",
+      "id": "Steam ID",
+      "choose_id": "Выбрать Steam ID"
+    },
+    "modengine": {
+      "title": "ModEngine",
+      "manager": "ModEngine DLL Manager",
+      "description": "Управление библиотеками DLL."
+    },
+    "fps": {
+      "title": "Разблокировка FPS",
+      "current": "Текущий FPS: {value}",
+      "target": "Значение FPS:",
+      "choose_exe": "Путь eldenring.exe",
+      "restore": "Восстановить оригинал eldenring.exe"
+    },
+    "backup": {
+      "title": "Настройки резервного копирования",
+      "format": "Формат сохранений",
+      "folder": "Папка резервных копий (обязательно!):",
+      "method": "Метод резервного копирования:",
+      "fixed_interval": "Фиксированный интервал",
+      "event_monitoring": "Мониторинг игровых событий",
+      "interval": "Интервал автоматического резервного копирования (минуты):",
+      "maximum": "Максимальное количество резервных копий:",
+      "sounds": "Включить звуки уведомлений",
+      "volume": "Громкость уведомлений",
+      "shortcuts": "Привязки клавиш",
+      "shortcut_save": "Сохранить резервную копию",
+      "shortcut_load": "Загрузить резервную копию",
+      "shortcut_start": "Запустить автоматическое резервное копирование",
+      "shortcut_stop": "Остановить автоматическое резервное копирование"
+    }
+  },
+  "bootstrap": {
+    "catalog_error_title": "Ошибка локализации",
+    "startup_error_title": "Ошибка запуска",
+    "startup_error_message": "Не удалось запустить приложение.\n\n{error}"
+  }
+}
