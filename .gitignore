@@ -12,6 +12,9 @@ build/
 dist/
 wheels/
 
+# Local runtime configuration
+.env
+
 # Test and render output
 .coverage
 htmlcov/

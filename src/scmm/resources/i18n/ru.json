@@ -149,7 +149,9 @@
     "modengine": {
       "title": "ModEngine",
       "manager": "ModEngine DLL Manager",
-      "description": "Управление библиотеками DLL."
+      "description": "Управляйте своими библиотеками DLL. ersc.dll нельзя отключить.",
+      "error_title": "Ошибка ModEngine",
+      "error_message": "Не удалось изменить config_eldenring.toml.\n\n{error}"
     },
     "fps": {
       "title": "Разблокировка FPS",
@@ -175,6 +177,31 @@
       "shortcut_load": "Загрузить резервную копию",
       "shortcut_start": "Запустить автоматическое резервное копирование",
       "shortcut_stop": "Остановить автоматическое резервное копирование"
+    }
+  },
+  "auto_setup": {
+    "title": "Автоматическая установка Seamless Co-op и ModEngine",
+    "instructions": "Этот мастер установщик поможет вам настроить Seamless Co-op с ModEngine.\n\n1. Выберите папку с игрой Elden Ring\n2. Установите свой пароль для участия в кооперативе\n3. Мастер установщик автоматически:\n   - Скачает и установит ModEngine\n   - Скачает и установит Seamless Co-op\n   - Настроит все необходимые файлы\n   - Сохранит ваши настройки",
+    "game_path": "Путь к папке с игрой:",
+    "game_path_placeholder": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\ELDEN RING\\Game",
+    "password": "Пароль для кооператива:",
+    "password_placeholder": "Введите пароль для кооператива",
+    "start": "Начать установку",
+    "validation_title": "Проверьте настройки",
+    "invalid_game_path": "В выбранной папке не найден eldenring.exe.",
+    "password_required": "Введите пароль для кооператива.",
+    "success_title": "Установка завершена",
+    "success_message": "ModEngine2 и Seamless Co-op {version} успешно установлены.",
+    "error_title": "Ошибка установки",
+    "error_message": "Не удалось завершить установку.\n\n{error}",
+    "phases": {
+      "release": "Проверка последнего релиза Seamless Co-op…",
+      "download_modengine": "Загрузка ModEngine2…",
+      "download_ersc": "Загрузка Seamless Co-op…",
+      "extract": "Проверка и распаковка архивов…",
+      "install": "Установка файлов…",
+      "configure": "Настройка ModEngine и Seamless Co-op…",
+      "complete": "Установка завершена."
     }
   },
   "launch": {

@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal, Slot
+from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication,
@@ -17,14 +17,18 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMessageBox,
+    QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSlider,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
+from scmm.installer import InstallResult
 from scmm.localization import TranslationService
+from scmm.modengine import ModEngineConfig, ModEngineConfigError
 from scmm.resource_loader import load_optional_icon, optional_resource_path
 from scmm.settings import AppSettings, SettingsStore
 from scmm.shortcuts import deserialize_key_sequence, serialize_key_sequence
@@ -186,11 +190,24 @@ class SettingsPage(LocalizedPage):
         manager_copy.addWidget(modengine_description)
         manager_card_layout.addLayout(manager_copy, 1)
 
-        open_mod_folder = action_button(self, "common.open_folder", "openModFolderButton")
-        open_mod_folder.setEnabled(False)
-        manager_card_layout.addWidget(open_mod_folder, alignment=Qt.AlignmentFlag.AlignVCenter)
+        self.open_mod_folder_button = action_button(
+            self,
+            "common.open_folder",
+            "openModFolderButton",
+        )
+        self.open_mod_folder_button.setEnabled(False)
+        manager_card_layout.addWidget(
+            self.open_mod_folder_button,
+            alignment=Qt.AlignmentFlag.AlignVCenter,
+        )
         modengine_layout.addWidget(manager_card)
 
+        self.modengine_badges_container = QWidget()
+        self.modengine_badges_layout = QHBoxLayout(self.modengine_badges_container)
+        self.modengine_badges_layout.setContentsMargins(0, 0, 0, 0)
+        self.modengine_badges_layout.setSpacing(6)
+        self.modengine_badges: list[QPushButton] = []
+        modengine_layout.addWidget(self.modengine_badges_container)
         modengine_layout.addStretch(1)
         layout.addWidget(modengine)
 
@@ -332,6 +349,7 @@ class SettingsPage(LocalizedPage):
         for editor, value in zip(self.shortcut_edits, shortcut_values, strict=True):
             editor.setKeySequence(deserialize_key_sequence(value))
         self._update_backup_open_button(settings.backup_directory)
+        self.refresh_modengine()
 
     def _connect_controls(self) -> None:
         self.language_combo.currentIndexChanged.connect(
@@ -339,6 +357,7 @@ class SettingsPage(LocalizedPage):
         )
         self.browse_game_button.clicked.connect(self._browse_game_directory)
         self.game_path_edit.editingFinished.connect(self._save_game_directory)
+        self.open_mod_folder_button.clicked.connect(self._open_mod_folder)
         self.browse_launcher_button.clicked.connect(self._browse_launcher)
         self.launcher_edit.editingFinished.connect(
             lambda: self._persist(game_exe_path=self.launcher_edit.text().strip())
@@ -416,7 +435,81 @@ class SettingsPage(LocalizedPage):
     def _save_game_directory(self) -> None:
         path = self.game_path_edit.text().strip()
         self._persist(mod_path=path)
+        self.refresh_modengine()
         self.game_directory_changed.emit(path)
+
+    def _open_mod_folder(self) -> None:
+        directory = Path(self.game_path_edit.text().strip()) / "mod"
+        if directory.is_dir():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(directory)))
+
+    def refresh_modengine(self) -> None:
+        game_text = self.game_path_edit.text().strip()
+        game_directory = Path(game_text) if game_text else None
+        mod_directory = game_directory / "mod" if game_directory is not None else None
+        self.open_mod_folder_button.setEnabled(
+            mod_directory is not None and mod_directory.is_dir()
+        )
+        while self.modengine_badges_layout.count():
+            item = self.modengine_badges_layout.takeAt(0)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+        self.modengine_badges = []
+        if game_directory is None:
+            return
+        config = ModEngineConfig.from_game_directory(game_directory)
+        try:
+            dlls = config.list_dlls()
+            if any(dll.locked and not dll.enabled for dll in dlls):
+                config.ensure_ersc()
+                dlls = config.list_dlls()
+        except (OSError, ModEngineConfigError):
+            LOGGER.exception("Unable to read ModEngine configuration")
+            return
+        for dll in dlls:
+            badge = QPushButton(Path(dll.path).name)
+            badge.setObjectName("modEngineDllBadge")
+            badge.setProperty("active", dll.enabled)
+            badge.setProperty("locked", dll.locked)
+            badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            if not dll.locked:
+                badge.clicked.connect(
+                    lambda _checked=False, path=dll.path, enabled=dll.enabled: (
+                        self._toggle_modengine_dll(path, not enabled)
+                    )
+                )
+            self.modengine_badges_layout.addWidget(badge)
+            self.modengine_badges.append(badge)
+        self.modengine_badges_layout.addStretch(1)
+
+    def _toggle_modengine_dll(self, path: str, enabled: bool) -> None:
+        game_text = self.game_path_edit.text().strip()
+        if not game_text:
+            return
+        try:
+            ModEngineConfig.from_game_directory(game_text).set_enabled(path, enabled)
+        except (OSError, ModEngineConfigError) as error:
+            QMessageBox.warning(
+                self,
+                self.translator.translate("settings.modengine.error_title"),
+                self.translator.translate(
+                    "settings.modengine.error_message",
+                    error=error,
+                ),
+            )
+            return
+        self.refresh_modengine()
+
+    @Slot(object)
+    def handle_installation_completed(self, result: InstallResult) -> None:
+        self.game_path_edit.setText(str(result.game_directory))
+        self.launcher_edit.setText(str(result.launcher_path))
+        self.refresh_modengine()
+        self.game_directory_changed.emit(str(result.game_directory))
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self.refresh_modengine()
 
     def _browse_launcher(self) -> None:
         selected, _filter = QFileDialog.getOpenFileName(

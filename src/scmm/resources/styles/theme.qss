@@ -576,12 +576,21 @@ QLabel#modEngineDescriptionLabel {
     font-weight: 400;
 }
 
-QLabel#modEngineDllBadge {
+QPushButton#modEngineDllBadge {
     color: white;
     background: #45a852;
     border-radius: 2px;
     padding: 2px 8px;
     font-weight: 700;
+}
+
+QPushButton#modEngineDllBadge[active="false"] {
+    color: #b7b7b7;
+    background: #4a4b4e;
+}
+
+QPushButton#modEngineDllBadge[locked="true"]:hover {
+    background: #45a852;
 }
 
 QLabel[role="journeyBadge"] {
@@ -640,4 +649,16 @@ QAbstractItemView#compactComboPopupView::item {
     border-radius: 0;
     padding: 2px 8px;
     margin: 0;
+}
+
+QDialog#autoSetupDialog {
+    background-color: #292A2D;
+}
+
+QLabel#autoSetupInstructions {
+    line-height: 1.25;
+}
+
+QPushButton#autoSetupStartButton {
+    min-height: 24px;
 }

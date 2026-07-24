@@ -19,12 +19,18 @@ from PySide6.QtWidgets import (
 
 from scmm.localization import TranslationService
 from scmm.resource_loader import load_optional_icon
+from scmm.settings import SettingsStore
 from scmm.ui.dialogs.about import AboutDialog
+from scmm.ui.dialogs.auto_setup import AutoSetupDialog, InstallerFactory
 from scmm.ui.page_spec import PageSpec
 from scmm.ui.widgets.popups import SquarePopupMenu
 from scmm.version import DISPLAY_VERSION
 
 AboutFactory = Callable[[TranslationService, QWidget | None], QDialog]
+AutoSetupFactory = Callable[
+    [TranslationService, SettingsStore, InstallerFactory, QWidget | None],
+    QDialog,
+]
 
 
 class MainWindow(QMainWindow):
@@ -32,15 +38,21 @@ class MainWindow(QMainWindow):
         self,
         translator: TranslationService,
         pages: Sequence[PageSpec],
+        settings_store: SettingsStore,
+        installer_factory: InstallerFactory,
         *,
         about_factory: AboutFactory = AboutDialog,
+        auto_setup_factory: AutoSetupFactory = AutoSetupDialog,
     ) -> None:
         super().__init__()
         if len(pages) != 6:
             raise ValueError("MainWindow requires exactly six pages")
         self.translator = translator
         self._pages = tuple(pages)
+        self._settings_store = settings_store
+        self._installer_factory = installer_factory
         self._about_factory = about_factory
+        self._auto_setup_factory = auto_setup_factory
         self.navigation_buttons: list[QPushButton] = []
         self.help_actions: list[QAction] = []
 
@@ -62,7 +74,10 @@ class MainWindow(QMainWindow):
         ):
             action = QAction(self)
             action.setProperty("translationKey", key)
-            action.triggered.connect(lambda _checked=False: self.show_about())
+            callback = self.show_auto_setup if key == "menu.auto_setup" else self.show_about
+            action.triggered.connect(
+                lambda _checked=False, handler=callback: handler()
+            )
             self.help_menu.addAction(action)
             self.help_actions.append(action)
 
@@ -123,6 +138,23 @@ class MainWindow(QMainWindow):
 
     def show_about(self) -> None:
         dialog = self._about_factory(self.translator, self)
+        dialog.exec()
+
+    def show_auto_setup(self) -> None:
+        dialog = self._auto_setup_factory(
+            self.translator,
+            self._settings_store,
+            self._installer_factory,
+            self,
+        )
+        settings_page = self._pages[-1].widget
+        if hasattr(dialog, "installation_completed") and hasattr(
+            settings_page,
+            "handle_installation_completed",
+        ):
+            dialog.installation_completed.connect(
+                settings_page.handle_installation_completed
+            )
         dialog.exec()
 
     def retranslate_ui(self) -> None:

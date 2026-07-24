@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import unittest
+
+from scmm.releases import ReleaseError, select_release_asset
+
+
+class ReleaseSelectionTests(unittest.TestCase):
+    def test_selects_zip_and_reads_github_digest(self) -> None:
+        asset = select_release_asset(
+            {
+                "tag_name": "v1.9.8",
+                "assets": [
+                    {
+                        "name": "Seamless.Co-op.v1.9.8.zip",
+                        "browser_download_url": "https://example.invalid/ersc.zip",
+                        "content_type": "application/x-zip-compressed",
+                        "size": 1234,
+                        "digest": "sha256:ABCDEF",
+                    }
+                ],
+            }
+        )
+
+        self.assertEqual(asset.tag_name, "v1.9.8")
+        self.assertEqual(asset.name, "Seamless.Co-op.v1.9.8.zip")
+        self.assertEqual(asset.download_url, "https://example.invalid/ersc.zip")
+        self.assertEqual(asset.size, 1234)
+        self.assertEqual(asset.sha256, "abcdef")
+
+    def test_prefers_seamless_named_zip_when_release_has_other_archives(self) -> None:
+        asset = select_release_asset(
+            {
+                "tag_name": "v2",
+                "assets": [
+                    {
+                        "name": "symbols.zip",
+                        "browser_download_url": "https://example.invalid/symbols.zip",
+                    },
+                    {
+                        "name": "ERSc-release.zip",
+                        "browser_download_url": "https://example.invalid/ersc.zip",
+                    },
+                ],
+            }
+        )
+
+        self.assertEqual(asset.name, "ERSc-release.zip")
+
+    def test_rejects_ambiguous_zip_assets(self) -> None:
+        with self.assertRaisesRegex(ReleaseError, "однозначно"):
+            select_release_asset(
+                {
+                    "tag_name": "v2",
+                    "assets": [
+                        {
+                            "name": "one.zip",
+                            "browser_download_url": "https://example.invalid/one.zip",
+                        },
+                        {
+                            "name": "two.zip",
+                            "browser_download_url": "https://example.invalid/two.zip",
+                        },
+                    ],
+                }
+            )
+
+    def test_rejects_release_without_zip_asset(self) -> None:
+        with self.assertRaisesRegex(ReleaseError, "ZIP"):
+            select_release_asset({"tag_name": "v2", "assets": []})
+
+    def test_rejects_asset_name_that_can_escape_download_directory(self) -> None:
+        with self.assertRaisesRegex(ReleaseError, "имя"):
+            select_release_asset(
+                {
+                    "tag_name": "v2",
+                    "assets": [
+                        {
+                            "name": "../Seamless.zip",
+                            "browser_download_url": "https://example.invalid/ersc.zip",
+                        }
+                    ],
+                }
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

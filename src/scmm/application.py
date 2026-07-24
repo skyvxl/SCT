@@ -6,9 +6,11 @@ from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from scmm.installer import ModInstaller
 from scmm.localization import TranslationCatalogError, TranslationService
 from scmm.logging_config import configure_logging
 from scmm.resource_loader import load_stylesheet
+from scmm.runtime_config import RuntimeConfig
 from scmm.settings import SettingsStore
 from scmm.steam import SteamService
 from scmm.ui.main_window import MainWindow
@@ -35,6 +37,8 @@ def build_main_window(
     return MainWindow(
         translator,
         build_page_specs(translator, settings_store, steam_service),
+        settings_store,
+        lambda: ModInstaller(RuntimeConfig.load()),
     )
 
 
