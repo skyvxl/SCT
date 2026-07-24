@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from sct.errors import localized_error_message
 from sct.installer import InstallResult
 from sct.localization import TranslationService
 from sct.modengine import ModEngineConfig, ModEngineConfigError
@@ -489,12 +490,17 @@ class SettingsPage(LocalizedPage):
         try:
             ModEngineConfig.from_game_directory(game_text).set_enabled(path, enabled)
         except (OSError, ModEngineConfigError) as error:
+            LOGGER.exception("Unable to update ModEngine configuration")
             QMessageBox.warning(
                 self,
                 self.translator.translate("settings.modengine.error_title"),
                 self.translator.translate(
                     "settings.modengine.error_message",
-                    error=error,
+                    message=localized_error_message(
+                        self.translator,
+                        error,
+                        fallback_key="errors.modengine_update_failed",
+                    ),
                 ),
             )
             return

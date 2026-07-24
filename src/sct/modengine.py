@@ -7,6 +7,8 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+from sct.errors import LocalizedError
+
 ERSC_DLL_PATH = r"SeamlessCoop\ersc.dll"
 _ARRAY_START = re.compile(r"^[ \t]*external_dlls[ \t]*=[ \t]*\[")
 _SECTION = re.compile(r"^[ \t]*\[([^\]]+)]")
@@ -18,7 +20,7 @@ _DLL_LINE = re.compile(
 _INLINE_STRING = re.compile(r'"(?P<raw>(?:\\.|[^"])*)"')
 
 
-class ModEngineConfigError(RuntimeError):
+class ModEngineConfigError(LocalizedError):
     pass
 
 
@@ -37,7 +39,10 @@ def _decode_toml_string(raw_value: str) -> str:
     try:
         return str(tomllib.loads(f'value = "{raw_value}"')["value"])
     except (tomllib.TOMLDecodeError, KeyError) as error:
-        raise ModEngineConfigError("Некорректная строка DLL в config_eldenring.toml") from error
+        raise ModEngineConfigError(
+            "modengine_dll_string_invalid",
+            "Invalid DLL string in config_eldenring.toml",
+        ) from error
 
 
 def _encode_toml_string(value: str) -> str:
@@ -113,13 +118,23 @@ class ModEngineConfig:
 
     def set_enabled(self, path: str, enabled: bool) -> None:
         if _normalized_dll_path(path) == _normalized_dll_path(ERSC_DLL_PATH) and not enabled:
-            raise ModEngineConfigError("ersc.dll является обязательной библиотекой")
+            raise ModEngineConfigError(
+                "modengine_ersc_required",
+                "ersc.dll is required and cannot be disabled",
+            )
         lines = self._read_lines()
         bounds = self._array_bounds(lines)
         if bounds is None:
-            raise ModEngineConfigError("В конфигурации отсутствует external_dlls")
+            raise ModEngineConfigError(
+                "modengine_external_dlls_missing",
+                "external_dlls is missing from config_eldenring.toml",
+            )
         if not self._set_enabled_in_lines(lines, *bounds, path, enabled):
-            raise ModEngineConfigError(f"DLL не найдена в external_dlls: {path}")
+            raise ModEngineConfigError(
+                "modengine_dll_not_found",
+                f"DLL is not present in external_dlls: {path}",
+                params={"path": path},
+            )
         self._atomic_write("".join(lines))
 
     def _set_enabled_in_lines(
@@ -196,7 +211,10 @@ class ModEngineConfig:
             for end in range(start + 1, len(lines)):
                 if "]" in lines[end]:
                     return start, end
-            raise ModEngineConfigError("Массив external_dlls не закрыт")
+            raise ModEngineConfigError(
+                "modengine_array_unclosed",
+                "external_dlls array is not closed",
+            )
         return None
 
     def _atomic_write(self, document: str) -> None:

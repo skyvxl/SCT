@@ -47,12 +47,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
     application = get_application(arguments)
     try:
         translator = TranslationService()
-    except TranslationCatalogError as error:
+    except TranslationCatalogError:
         LOGGER.exception("Unable to initialize localization")
         QMessageBox.critical(
             None,
-            "Ошибка локализации",
-            f"Не удалось загрузить русский перевод.\n\n{error}",
+            "Localization error",
+            "Unable to load localization resources.",
         )
         return 1
     try:
@@ -60,12 +60,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         settings_store = SettingsStore()
         settings_store.ensure_exists()
         window = build_main_window(translator, settings_store, SteamService())
-    except Exception as error:
+    except Exception:
         LOGGER.exception("Unable to build application window")
         QMessageBox.critical(
             None,
             translator.translate("bootstrap.startup_error_title"),
-            translator.translate("bootstrap.startup_error_message", error=error),
+            translator.translate("bootstrap.startup_error_message"),
         )
         return 1
     window.show()

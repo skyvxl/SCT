@@ -29,6 +29,7 @@ class ApplicationTests(unittest.TestCase):
             result = main([])
         self.assertEqual(result, 1)
         critical.assert_called_once()
+        self.assertEqual(critical.call_args.args[1], "Localization error")
         self.assertTrue(any("Unable to initialize localization" in entry for entry in logs.output))
 
     @patch("sct.application.configure_logging")
@@ -46,6 +47,7 @@ class ApplicationTests(unittest.TestCase):
             result = main([])
         self.assertEqual(result, 1)
         critical.assert_called_once()
+        self.assertNotIn("broken window", critical.call_args.args[2])
         self.assertTrue(any("Unable to build application window" in entry for entry in logs.output))
 
 

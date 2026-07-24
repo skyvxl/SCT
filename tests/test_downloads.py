@@ -37,7 +37,7 @@ class DownloadTests(unittest.TestCase):
             source.write_bytes(b"bad payload")
             destination = root / "downloaded.zip"
 
-            with self.assertRaisesRegex(DownloadError, "SHA-256"):
+            with self.assertRaises(DownloadError) as caught:
                 download_file(
                     source.as_uri(),
                     destination,
@@ -45,6 +45,7 @@ class DownloadTests(unittest.TestCase):
                 )
 
             self.assertFalse(destination.exists())
+            self.assertEqual(caught.exception.code, "download_checksum_mismatch")
 
 
 class SafeZipTests(unittest.TestCase):
@@ -82,8 +83,9 @@ class SafeZipTests(unittest.TestCase):
             with zipfile.ZipFile(archive, "w") as bundle:
                 bundle.writestr(link, "target")
 
-            with self.assertRaisesRegex(UnsafeArchiveError, "символическую ссылку"):
+            with self.assertRaises(UnsafeArchiveError) as caught:
                 safe_extract_zip(archive, root / "extract")
+            self.assertEqual(caught.exception.code, "archive_symlink_unsafe")
 
 
 if __name__ == "__main__":

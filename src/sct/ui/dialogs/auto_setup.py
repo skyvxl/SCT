@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from pathlib import Path
 
@@ -18,17 +19,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from sct.errors import localized_error_message
 from sct.installer import InstallResult, ModInstaller
 from sct.localization import TranslationService
 from sct.settings import SettingsStore
 
 InstallerFactory = Callable[[], ModInstaller]
+LOGGER = logging.getLogger("sct.ui.auto_setup")
 
 
 class InstallWorker(QObject):
     progress = Signal(str, int)
     completed = Signal(object)
-    failed = Signal(str)
+    failed = Signal(object)
     finished = Signal()
 
     def __init__(self, installer: ModInstaller, game_directory: str, password: str) -> None:
@@ -46,7 +49,8 @@ class InstallWorker(QObject):
                 progress=self.progress.emit,
             )
         except Exception as error:
-            self.failed.emit(str(error))
+            LOGGER.exception("Automatic installation failed")
+            self.failed.emit(error)
         else:
             self.completed.emit(result)
         finally:
@@ -163,7 +167,8 @@ class AutoSetupDialog(QDialog):
         try:
             installer = self.installer_factory()
         except Exception as error:
-            self._handle_failure(str(error))
+            LOGGER.exception("Unable to initialize automatic installer")
+            self._handle_failure(error)
             return
 
         self._set_running(True)
@@ -220,13 +225,14 @@ class AutoSetupDialog(QDialog):
         )
         self.accept()
 
-    @Slot(str)
-    def _handle_failure(self, message: str) -> None:
+    @Slot(object)
+    def _handle_failure(self, error: BaseException) -> None:
         self._set_running(False)
+        message = localized_error_message(self.translator, error)
         QMessageBox.critical(
             self,
             self.translator.translate("auto_setup.error_title"),
-            self.translator.translate("auto_setup.error_message", error=message),
+            self.translator.translate("auto_setup.error_message", message=message),
         )
 
     @Slot()

@@ -151,7 +151,7 @@
       "manager": "ModEngine DLL Manager",
       "description": "Управляйте своими библиотеками DLL. ersc.dll нельзя отключить.",
       "error_title": "Ошибка ModEngine",
-      "error_message": "Не удалось изменить config_eldenring.toml.\n\n{error}"
+      "error_message": "Не удалось изменить config_eldenring.toml.\n\n{message}"
     },
     "fps": {
       "title": "Разблокировка FPS",
@@ -193,7 +193,7 @@
     "success_title": "Установка завершена",
     "success_message": "ModEngine2 и Seamless Co-op {version} успешно установлены.",
     "error_title": "Ошибка установки",
-    "error_message": "Не удалось завершить установку.\n\n{error}",
+    "error_message": "Не удалось завершить установку.\n\n{message}",
     "phases": {
       "release": "Проверка последнего релиза Seamless Co-op…",
       "download_modengine": "Загрузка ModEngine2…",
@@ -204,9 +204,41 @@
       "complete": "Установка завершена."
     }
   },
+  "errors": {
+    "unexpected": "Произошла непредвиденная ошибка.",
+    "runtime_config_invalid": "Не указан корректный адрес GitHub Releases API для Seamless Co-op.",
+    "release_zip_missing": "В последнем релизе Seamless Co-op не найден ZIP-архив.",
+    "release_zip_ambiguous": "Не удалось однозначно выбрать ZIP-архив Seamless Co-op.",
+    "release_asset_name_unsafe": "Архив релиза имеет небезопасное имя файла.",
+    "release_request_failed": "Не удалось получить данные последнего релиза Seamless Co-op.",
+    "release_response_invalid": "GitHub Releases API вернул некорректный ответ.",
+    "download_failed": "Не удалось скачать архив.",
+    "download_size_mismatch": "Размер загруженного архива не совпадает: ожидалось {expected}, получено {actual}.",
+    "download_checksum_mismatch": "Не удалось подтвердить целостность загруженного архива.",
+    "archive_path_unsafe": "Архив содержит небезопасный путь: {path}.",
+    "archive_symlink_unsafe": "Архив содержит недопустимую символическую ссылку: {path}.",
+    "archive_extract_failed": "Не удалось распаковать ZIP-архив.",
+    "installer_archive_symlink": "Установочный архив содержит недопустимую ссылку: {path}.",
+    "installer_path_outside_game": "Установщик попытался записать файл за пределами папки игры.",
+    "installer_target_invalid": "Установщик не может заменить существующий объект: {path}.",
+    "installer_directory_symlink": "Папка установки является символической ссылкой: {path}.",
+    "installer_directory_expected": "Вместо ожидаемой папки найден файл: {path}.",
+    "installer_game_exe_missing": "В выбранной папке не найден eldenring.exe.",
+    "installer_password_required": "Введите пароль для кооператива.",
+    "installer_rollback_failed": "Не удалось полностью отменить изменения после ошибки установки.",
+    "installer_modengine_structure": "Архив ModEngine2 имеет неожиданную структуру.",
+    "installer_ersc_structure": "Архив Seamless Co-op имеет неожиданную структуру.",
+    "installer_unexpected": "Во время установки произошла непредвиденная ошибка.",
+    "modengine_dll_string_invalid": "В config_eldenring.toml обнаружена некорректная строка DLL.",
+    "modengine_ersc_required": "ersc.dll является обязательной библиотекой и не может быть отключена.",
+    "modengine_external_dlls_missing": "В config_eldenring.toml отсутствует массив external_dlls.",
+    "modengine_dll_not_found": "Библиотека не найдена в external_dlls: {path}.",
+    "modengine_array_unclosed": "Массив external_dlls в config_eldenring.toml не закрыт.",
+    "modengine_update_failed": "Не удалось изменить config_eldenring.toml."
+  },
   "launch": {
-    "missing_launcher_title": "Файл запуска не найден",
-    "missing_launcher_message": "Укажите путь к ersc_launcher.exe в настройках менеджера.",
+    "missing_launcher_title": "Запуск игры не настроен",
+    "missing_launcher_message": "Укажите в настройках Toolkit папку с игрой и исполняемый файл. Можно выбрать ersc_launcher.exe или eldenring.exe.",
     "missing_steam_title": "Steam не настроен",
     "missing_steam_message": "Укажите путь к Steam.exe или выполните автоматическое обнаружение.",
     "profile_mismatch_title": "Выбран другой профиль Steam",
@@ -215,11 +247,11 @@
     "steam_timeout_title": "Steam не запущен",
     "steam_timeout_message": "Не удалось дождаться запуска клиента Steam.",
     "error_title": "Ошибка запуска",
-    "error_message": "Не удалось запустить приложение:\n{error}"
+    "error_message": "Не удалось запустить игру."
   },
   "bootstrap": {
     "catalog_error_title": "Ошибка локализации",
     "startup_error_title": "Ошибка запуска",
-    "startup_error_message": "Не удалось запустить приложение.\n\n{error}"
+    "startup_error_message": "Не удалось запустить приложение."
   }
 }

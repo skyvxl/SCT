@@ -157,7 +157,16 @@ class SteamService:
 
     def launch_game(self, launcher: Path | str) -> None:
         launcher_path = Path(launcher)
-        self._start_process([str(launcher_path)], cwd=str(launcher_path.parent))
+        arguments = [str(launcher_path)]
+        if launcher_path.suffix.casefold() in {".bat", ".cmd"}:
+            arguments = [
+                os.environ.get("COMSPEC", "cmd.exe"),
+                "/d",
+                "/s",
+                "/c",
+                launcher_path.name,
+            ]
+        self._start_process(arguments, cwd=str(launcher_path.parent))
 
     @staticmethod
     def _registry_steam_path() -> Path | None:

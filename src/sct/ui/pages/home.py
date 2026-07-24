@@ -16,6 +16,23 @@ from sct.ui.pages.base import LocalizedPage
 LOGGER = logging.getLogger("sct.ui.home")
 
 
+class LaunchConfigurationError(RuntimeError):
+    pass
+
+
+def resolve_launch_target(settings: AppSettings) -> Path:
+    game_path = settings.mod_path.strip()
+    executable_path = settings.game_exe_path.strip()
+    if not game_path or not executable_path:
+        raise LaunchConfigurationError("Game directory and executable are required")
+    game_directory = Path(game_path)
+    executable = Path(executable_path)
+    if not game_directory.is_dir() or not executable.is_file():
+        raise LaunchConfigurationError("Game directory or executable does not exist")
+    modengine_launcher = game_directory / "launchmod_eldenring.bat"
+    return modengine_launcher if modengine_launcher.is_file() else executable
+
+
 class HomePage(LocalizedPage):
     def __init__(
         self,
@@ -26,7 +43,7 @@ class HomePage(LocalizedPage):
         super().__init__(translator)
         self.settings_store = settings_store
         self.steam_service = steam_service
-        self._pending_launch: AppSettings | None = None
+        self._pending_launch: tuple[AppSettings, Path] | None = None
         self._steam_wait_attempts = 0
         layout = QVBoxLayout(self)
         layout.addStretch(2)
@@ -54,8 +71,9 @@ class HomePage(LocalizedPage):
 
     def _launch(self) -> None:
         settings = self.settings_store.load()
-        launcher = Path(settings.game_exe_path)
-        if not launcher.is_file():
+        try:
+            launch_target = resolve_launch_target(settings)
+        except LaunchConfigurationError:
             QMessageBox.warning(
                 self,
                 self.translator.translate("launch.missing_launcher_title"),
@@ -65,7 +83,7 @@ class HomePage(LocalizedPage):
         if self.steam_service.is_running():
             if not self._selected_profile_is_active(settings):
                 return
-            self._launch_game(launcher)
+            self._launch_game(launch_target)
             return
 
         steam_executable = Path(settings.steam_exe_path)
@@ -87,21 +105,22 @@ class HomePage(LocalizedPage):
             LOGGER.exception("Unable to start Steam")
             self._show_launch_error(error)
             return
-        self._pending_launch = settings
+        self._pending_launch = (settings, launch_target)
         self._steam_wait_attempts = 0
         self.launch_button.setEnabled(False)
         QTimer.singleShot(500, self._wait_for_steam)
 
     def _wait_for_steam(self) -> None:
-        settings = self._pending_launch
-        if settings is None:
+        pending = self._pending_launch
+        if pending is None:
             self.launch_button.setEnabled(True)
             return
+        settings, launch_target = pending
         if self.steam_service.is_running():
             self._pending_launch = None
             self.launch_button.setEnabled(True)
             if self._selected_profile_is_active(settings):
-                self._launch_game(Path(settings.game_exe_path))
+                self._launch_game(launch_target)
             return
         self._steam_wait_attempts += 1
         if self._steam_wait_attempts >= 30:
@@ -156,5 +175,5 @@ class HomePage(LocalizedPage):
         QMessageBox.critical(
             self,
             self.translator.translate("launch.error_title"),
-            self.translator.translate("launch.error_message", error=error),
+            self.translator.translate("launch.error_message"),
         )

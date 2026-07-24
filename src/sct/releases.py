@@ -8,8 +8,10 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from sct.errors import LocalizedError
 
-class ReleaseError(RuntimeError):
+
+class ReleaseError(LocalizedError):
     pass
 
 
@@ -34,7 +36,10 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
         and isinstance(asset.get("browser_download_url"), str)
     ]
     if not zip_assets:
-        raise ReleaseError("В последнем релизе не найден ZIP-архив Seamless Co-op")
+        raise ReleaseError(
+            "release_zip_missing",
+            "The latest Seamless Co-op release does not contain a ZIP asset",
+        )
     preferred = [
         asset
         for asset in zip_assets
@@ -42,7 +47,10 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
     ]
     candidates = preferred or zip_assets
     if len(candidates) != 1:
-        raise ReleaseError("Не удалось однозначно выбрать ZIP-архив Seamless Co-op")
+        raise ReleaseError(
+            "release_zip_ambiguous",
+            "Unable to select one Seamless Co-op ZIP asset",
+        )
 
     selected = candidates[0]
     selected_name = str(selected["name"])
@@ -51,7 +59,10 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
         or PureWindowsPath(selected_name).name != selected_name
         or PureWindowsPath(selected_name).drive
     ):
-        raise ReleaseError("Архив релиза имеет небезопасное имя файла")
+        raise ReleaseError(
+            "release_asset_name_unsafe",
+            f"Release asset has an unsafe file name: {selected_name}",
+        )
     raw_digest = selected.get("digest")
     sha256 = None
     if isinstance(raw_digest, str) and raw_digest.casefold().startswith("sha256:"):
@@ -84,7 +95,13 @@ class GitHubReleaseClient:
             with urlopen(request, timeout=self.timeout) as response:
                 payload = json.load(response)
         except (HTTPError, URLError, OSError, json.JSONDecodeError) as error:
-            raise ReleaseError(f"Не удалось получить данные последнего релиза: {error}") from error
+            raise ReleaseError(
+                "release_request_failed",
+                f"Unable to fetch the latest release: {error}",
+            ) from error
         if not isinstance(payload, Mapping):
-            raise ReleaseError("GitHub Releases API вернул некорректный ответ")
+            raise ReleaseError(
+                "release_response_invalid",
+                "GitHub Releases API returned an invalid response",
+            )
         return select_release_asset(payload)

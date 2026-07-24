@@ -87,6 +87,24 @@ class SteamTests(unittest.TestCase):
         )
         self.assertEqual(game_call.kwargs["cwd"], r"C:\Games\ELDEN RING\Game")
 
+    def test_batch_launch_uses_command_processor_and_game_directory(self) -> None:
+        popen = Mock()
+        service = SteamService(start_process=popen)
+
+        with patch.dict("os.environ", {"COMSPEC": r"C:\Windows\System32\cmd.exe"}):
+            service.launch_game(r"C:\Games\ELDEN RING\Game\launchmod_eldenring.bat")
+
+        popen.assert_called_once_with(
+            [
+                r"C:\Windows\System32\cmd.exe",
+                "/d",
+                "/s",
+                "/c",
+                "launchmod_eldenring.bat",
+            ],
+            cwd=r"C:\Games\ELDEN RING\Game",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

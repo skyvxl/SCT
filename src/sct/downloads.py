@@ -9,14 +9,16 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from sct.errors import LocalizedError
+
 ProgressCallback = Callable[[int, int | None], None]
 
 
-class DownloadError(RuntimeError):
+class DownloadError(LocalizedError):
     pass
 
 
-class UnsafeArchiveError(RuntimeError):
+class UnsafeArchiveError(LocalizedError):
     pass
 
 
@@ -48,17 +50,25 @@ def download_file(
                     progress(received, total)
     except (HTTPError, URLError, OSError) as error:
         target.unlink(missing_ok=True)
-        raise DownloadError(f"Не удалось скачать архив: {error}") from error
+        raise DownloadError(
+            "download_failed",
+            f"Unable to download archive: {error}",
+        ) from error
 
     if expected_size is not None and received != expected_size:
         target.unlink(missing_ok=True)
         raise DownloadError(
-            f"Размер загруженного архива не совпадает: ожидалось {expected_size}, получено {received}"
+            "download_size_mismatch",
+            f"Downloaded size mismatch: expected {expected_size}, got {received}",
+            params={"expected": expected_size, "actual": received},
         )
     normalized_digest = (expected_digest or "").casefold().removeprefix("sha256:")
     if normalized_digest and digest.hexdigest().casefold() != normalized_digest:
         target.unlink(missing_ok=True)
-        raise DownloadError("Проверка SHA-256 загруженного архива завершилась ошибкой")
+        raise DownloadError(
+            "download_checksum_mismatch",
+            "Downloaded archive SHA-256 mismatch",
+        )
     return target
 
 
@@ -73,11 +83,17 @@ def _validated_member_path(info: zipfile.ZipInfo) -> PurePosixPath:
         or bool(windows_path.drive)
         or ".." in posix_path.parts
     ):
-        raise UnsafeArchiveError(f"Архив содержит небезопасный путь: {info.filename}")
+        raise UnsafeArchiveError(
+            "archive_path_unsafe",
+            f"Archive contains an unsafe path: {info.filename}",
+            params={"path": info.filename},
+        )
     file_type = (info.external_attr >> 16) & 0o170000
     if info.create_system == 3 and file_type == stat.S_IFLNK:
         raise UnsafeArchiveError(
-            f"Архив содержит символическую ссылку: {info.filename}"
+            "archive_symlink_unsafe",
+            f"Archive contains a symbolic link: {info.filename}",
+            params={"path": info.filename},
         )
     return posix_path
 
@@ -99,5 +115,8 @@ def safe_extract_zip(archive: Path | str, destination: Path | str) -> Path:
     except UnsafeArchiveError:
         raise
     except (OSError, zipfile.BadZipFile, RuntimeError) as error:
-        raise UnsafeArchiveError(f"Не удалось распаковать ZIP-архив: {error}") from error
+        raise UnsafeArchiveError(
+            "archive_extract_failed",
+            f"Unable to extract ZIP archive: {error}",
+        ) from error
     return target_root

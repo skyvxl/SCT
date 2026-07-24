@@ -48,7 +48,7 @@ class ReleaseSelectionTests(unittest.TestCase):
         self.assertEqual(asset.name, "ERSc-release.zip")
 
     def test_rejects_ambiguous_zip_assets(self) -> None:
-        with self.assertRaisesRegex(ReleaseError, "однозначно"):
+        with self.assertRaises(ReleaseError) as caught:
             select_release_asset(
                 {
                     "tag_name": "v2",
@@ -64,13 +64,15 @@ class ReleaseSelectionTests(unittest.TestCase):
                     ],
                 }
             )
+        self.assertEqual(caught.exception.code, "release_zip_ambiguous")
 
     def test_rejects_release_without_zip_asset(self) -> None:
-        with self.assertRaisesRegex(ReleaseError, "ZIP"):
+        with self.assertRaises(ReleaseError) as caught:
             select_release_asset({"tag_name": "v2", "assets": []})
+        self.assertEqual(caught.exception.code, "release_zip_missing")
 
     def test_rejects_asset_name_that_can_escape_download_directory(self) -> None:
-        with self.assertRaisesRegex(ReleaseError, "имя"):
+        with self.assertRaises(ReleaseError) as caught:
             select_release_asset(
                 {
                     "tag_name": "v2",
@@ -82,6 +84,7 @@ class ReleaseSelectionTests(unittest.TestCase):
                     ],
                 }
             )
+        self.assertEqual(caught.exception.code, "release_asset_name_unsafe")
 
 
 if __name__ == "__main__":

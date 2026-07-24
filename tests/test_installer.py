@@ -170,8 +170,9 @@ class ModInstallerTests(unittest.TestCase):
                 ),
             )
 
-            with self.assertRaisesRegex(InstallerError, "eldenring.exe"):
+            with self.assertRaises(InstallerError) as caught:
                 installer.install(Path(directory), "password")
+            self.assertEqual(caught.exception.code, "installer_game_exe_missing")
 
 
 if __name__ == "__main__":

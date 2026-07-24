@@ -39,8 +39,9 @@ class RuntimeConfigTests(unittest.TestCase):
         )
 
     def test_missing_release_url_is_reported(self) -> None:
-        with self.assertRaisesRegex(RuntimeConfigError, "ERSC_RELEASE_API_URL"):
+        with self.assertRaises(RuntimeConfigError) as caught:
             RuntimeConfig.load(environment={}, search_paths=())
+        self.assertEqual(caught.exception.code, "runtime_config_invalid")
 
 
 if __name__ == "__main__":

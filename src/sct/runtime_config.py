@@ -7,10 +7,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
+from sct.errors import LocalizedError
+
 ERSC_RELEASE_API_URL = "ERSC_RELEASE_API_URL"
 
 
-class RuntimeConfigError(RuntimeError):
+class RuntimeConfigError(LocalizedError):
     pass
 
 
@@ -64,6 +66,7 @@ class RuntimeConfig:
         parsed = urlparse(release_url)
         if not release_url or parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise RuntimeConfigError(
-                f"В переменной {ERSC_RELEASE_API_URL} должен быть указан URL GitHub Releases API"
+                "runtime_config_invalid",
+                f"{ERSC_RELEASE_API_URL} must contain a valid GitHub Releases API URL",
             )
         return cls(ersc_release_api_url=release_url)

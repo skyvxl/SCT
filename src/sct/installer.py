@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sct.downloads import download_file, safe_extract_zip
+from sct.errors import LocalizedError
 from sct.installer_settings import merge_ersc_settings
 from sct.modengine import ModEngineConfig
 from sct.releases import GitHubReleaseClient
@@ -26,7 +27,7 @@ MODENGINE_ITEMS = (
 ProgressCallback = Callable[[str, int], None]
 
 
-class InstallerError(RuntimeError):
+class InstallerError(LocalizedError):
     pass
 
 
@@ -58,7 +59,11 @@ class FileTransaction:
             relative = item.relative_to(source)
             target = destination / relative
             if item.is_symlink():
-                raise InstallerError(f"Установочный архив содержит ссылку: {relative}")
+                raise InstallerError(
+                    "installer_archive_symlink",
+                    f"Installer archive contains a link: {relative}",
+                    params={"path": str(relative)},
+                )
             if item.is_dir():
                 self._ensure_directory(target)
             elif item.is_file():
@@ -90,7 +95,10 @@ class FileTransaction:
         try:
             return path.resolve(strict=False).relative_to(self.root)
         except ValueError as error:
-            raise InstallerError(f"Попытка записи за пределы папки игры: {path}") from error
+            raise InstallerError(
+                "installer_path_outside_game",
+                f"Attempted write outside the game directory: {path}",
+            ) from error
 
     def _prepare_file(self, path: Path) -> None:
         relative = self._relative(path)
@@ -98,7 +106,11 @@ class FileTransaction:
             return
         self._prepared.add(relative)
         if path.is_symlink() or path.is_dir():
-            raise InstallerError(f"Нельзя заменить файл установки: {path}")
+            raise InstallerError(
+                "installer_target_invalid",
+                f"Unable to replace installation target: {path}",
+                params={"path": str(path)},
+            )
         if path.exists():
             backup = self.backup_root / relative
             backup.parent.mkdir(parents=True, exist_ok=True)
@@ -114,10 +126,18 @@ class FileTransaction:
         for part in relative.parts:
             current /= part
             if current.is_symlink():
-                raise InstallerError(f"Папка установки является ссылкой: {current}")
+                raise InstallerError(
+                    "installer_directory_symlink",
+                    f"Installation directory is a symbolic link: {current}",
+                    params={"path": str(current)},
+                )
             if current.exists():
                 if not current.is_dir():
-                    raise InstallerError(f"Ожидалась папка установки: {current}")
+                    raise InstallerError(
+                        "installer_directory_expected",
+                        f"Expected an installation directory: {current}",
+                        params={"path": str(current)},
+                    )
                 continue
             current.mkdir()
             self._created_directories.add(current)
@@ -146,9 +166,15 @@ class ModInstaller:
     ) -> InstallResult:
         game = Path(game_directory).expanduser().resolve()
         if not (game / "eldenring.exe").is_file():
-            raise InstallerError("В выбранной папке не найден eldenring.exe")
+            raise InstallerError(
+                "installer_game_exe_missing",
+                f"eldenring.exe is missing from the selected directory: {game}",
+            )
         if not password:
-            raise InstallerError("Введите пароль для кооператива")
+            raise InstallerError(
+                "installer_password_required",
+                "A co-op password is required",
+            )
 
         def emit(phase: str, percent: int) -> None:
             if progress is not None:
@@ -222,8 +248,15 @@ class ModInstaller:
                         launcher_path=game / "ersc_launcher.exe",
                         mod_directory=game / "mod",
                     )
-                except Exception:
-                    transaction.rollback()
+                except Exception as error:
+                    try:
+                        transaction.rollback()
+                    except OSError as rollback_error:
+                        transaction = None
+                        raise InstallerError(
+                            "installer_rollback_failed",
+                            f"Installation rollback failed: {rollback_error}",
+                        ) from error
                     transaction = None
                     raise
         except Exception as error:
@@ -232,11 +265,21 @@ class ModInstaller:
                     transaction.rollback()
                 except OSError as rollback_error:
                     raise InstallerError(
-                        f"Установка завершилась ошибкой, а откат не удался: {rollback_error}"
+                        "installer_rollback_failed",
+                        f"Installation rollback failed: {rollback_error}",
                     ) from error
             if isinstance(error, InstallerError):
                 raise
-            raise InstallerError(str(error)) from error
+            if isinstance(error, LocalizedError):
+                raise InstallerError(
+                    error.code,
+                    f"Installation failed: {error}",
+                    params=error.params,
+                ) from error
+            raise InstallerError(
+                "installer_unexpected",
+                f"Unexpected installation failure: {error}",
+            ) from error
 
     @staticmethod
     def _download_progress(
@@ -259,7 +302,10 @@ class ModInstaller:
             required = (*MODENGINE_ITEMS, "config_eldenring.toml")
             if all((candidate / name).exists() for name in required):
                 return candidate
-        raise InstallerError("Архив ModEngine2 имеет неожиданную структуру")
+        raise InstallerError(
+            "installer_modengine_structure",
+            "ModEngine2 archive has an unexpected structure",
+        )
 
     @staticmethod
     def _validate_ersc_staging(extracted: Path) -> None:
@@ -269,4 +315,7 @@ class ModInstaller:
             extracted / "SeamlessCoop" / "ersc_settings.ini",
         )
         if not all(path.is_file() for path in required):
-            raise InstallerError("Архив Seamless Co-op имеет неожиданную структуру")
+            raise InstallerError(
+                "installer_ersc_structure",
+                "Seamless Co-op archive has an unexpected structure",
+            )
