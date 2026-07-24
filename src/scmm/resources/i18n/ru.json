@@ -27,6 +27,7 @@
     "browse": "Обзор",
     "delete": "Удалить",
     "refresh": "Обновить",
+    "open": "Открыть",
     "open_folder": "Открыть папку"
   },
   "about": {
@@ -47,6 +48,8 @@
       "death_debuffs": "Негативный эффект после смерти",
       "allow_summons": "Призыв игровых фантомов",
       "skip_splash": "Пропустить вступительное интро",
+      "append_steam_id": "Добавлять Steam ID к имени игрока",
+      "always_spectate": "Всегда переходить в режим наблюдения после смерти",
       "overhead": "Информационная панель игрока:",
       "overhead_normal": "Обычная панель",
       "overhead_empty": "Пустая панель",
@@ -119,21 +122,29 @@
     },
     "game_path": {
       "title": "Путь к папке с игрой",
-      "label": "Папка с игрой:"
+      "label": "Папка с игрой:",
+      "dialog": "Выберите папку Elden Ring"
     },
     "launcher": {
       "title": "Seamless Co-op Запуск",
       "executable": "Seamless Co-op исполняемый файл",
-      "auto_update": "Автоматическое обновление"
+      "auto_update": "Автоматическое обновление",
+      "dialog": "Выберите ersc_launcher.exe"
     },
     "steam": {
       "title": "Steam Настройки",
       "executable": "Steam.exe",
       "auto_detect": "Автоматическое обнаружение",
       "not_running": "Steam статус: Не запущен",
+      "running": "Steam статус: Запущен",
       "silent": "Бесшумный запуск Steam в фоновом режиме",
       "id": "Steam ID",
-      "choose_id": "Выбрать Steam ID"
+      "choose_id": "Выбрать Steam ID",
+      "dialog": "Выберите Steam.exe",
+      "detected_title": "Steam обнаружен",
+      "detected_message": "Клиент Steam обнаружен:\n{path}",
+      "not_found_title": "Steam не найден",
+      "not_found_message": "Steam.exe не найден в стандартной папке установки."
     },
     "modengine": {
       "title": "ModEngine",
@@ -151,6 +162,7 @@
       "title": "Настройки резервного копирования",
       "format": "Формат сохранений",
       "folder": "Папка резервных копий (обязательно!):",
+      "dialog": "Выберите папку резервных копий",
       "method": "Метод резервного копирования:",
       "fixed_interval": "Фиксированный интервал",
       "event_monitoring": "Мониторинг игровых событий",
@@ -164,6 +176,19 @@
       "shortcut_start": "Запустить автоматическое резервное копирование",
       "shortcut_stop": "Остановить автоматическое резервное копирование"
     }
+  },
+  "launch": {
+    "missing_launcher_title": "Файл запуска не найден",
+    "missing_launcher_message": "Укажите путь к ersc_launcher.exe в настройках менеджера.",
+    "missing_steam_title": "Steam не настроен",
+    "missing_steam_message": "Укажите путь к Steam.exe или выполните автоматическое обнаружение.",
+    "profile_mismatch_title": "Выбран другой профиль Steam",
+    "profile_mismatch_message": "Сейчас в Steam активен другой пользователь. Переключитесь на выбранный профиль и повторите запуск.",
+    "profile_autostart_message": "Выбранный Steam ID не является последним активным профилем. Запустите Steam, переключитесь на него и повторите запуск.",
+    "steam_timeout_title": "Steam не запущен",
+    "steam_timeout_message": "Не удалось дождаться запуска клиента Steam.",
+    "error_title": "Ошибка запуска",
+    "error_message": "Не удалось запустить приложение:\n{error}"
   },
   "bootstrap": {
     "catalog_error_title": "Ошибка локализации",

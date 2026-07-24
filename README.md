@@ -18,4 +18,4 @@ uv run python -m unittest discover -s tests -v
 
 This project continues work based on Phantom Toolkit by **2Pz**.
 
-See and [`LICENSE`](LICENSE).
+See [`LICENSE`](LICENSE).

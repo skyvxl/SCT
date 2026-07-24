@@ -28,6 +28,7 @@ include = ["scmm*"]
 
 [tool.setuptools.package-data]
 scmm = [
+    "resources/*.wav",
     "resources/flags/*.png",
     "resources/icons/*",
     "resources/i18n/*.json",

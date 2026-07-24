@@ -19,6 +19,7 @@ ui-previews/
 
 # IDE and OS
 .vscode/
+.idea/
 *.code-workspace
 .DS_Store
 Thumbs.db

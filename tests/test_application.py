@@ -33,10 +33,12 @@ class ApplicationTests(unittest.TestCase):
 
     @patch("scmm.application.configure_logging")
     @patch("scmm.application.QMessageBox.critical")
+    @patch("scmm.application.SettingsStore")
     @patch("scmm.application.build_main_window", side_effect=RuntimeError("broken window"))
     def test_unhandled_startup_failure_is_reported_without_event_loop(
         self,
         _window: object,
+        _settings_store: object,
         critical: object,
         _logging: object,
     ) -> None:

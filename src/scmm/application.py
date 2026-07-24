@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 from scmm.localization import TranslationCatalogError, TranslationService
 from scmm.logging_config import configure_logging
 from scmm.resource_loader import load_stylesheet
+from scmm.settings import SettingsStore
+from scmm.steam import SteamService
 from scmm.ui.main_window import MainWindow
 from scmm.ui.pages import build_page_specs
 
@@ -25,8 +27,15 @@ def get_application(arguments: Sequence[str] | None = None) -> QApplication:
     return application
 
 
-def build_main_window(translator: TranslationService) -> MainWindow:
-    return MainWindow(translator, build_page_specs(translator))
+def build_main_window(
+    translator: TranslationService,
+    settings_store: SettingsStore,
+    steam_service: SteamService,
+) -> MainWindow:
+    return MainWindow(
+        translator,
+        build_page_specs(translator, settings_store, steam_service),
+    )
 
 
 def main(arguments: Sequence[str] | None = None) -> int:
@@ -44,7 +53,9 @@ def main(arguments: Sequence[str] | None = None) -> int:
         return 1
     try:
         application.setStyleSheet(load_stylesheet())
-        window = build_main_window(translator)
+        settings_store = SettingsStore()
+        settings_store.ensure_exists()
+        window = build_main_window(translator, settings_store, SteamService())
     except Exception as error:
         LOGGER.exception("Unable to build application window")
         QMessageBox.critical(

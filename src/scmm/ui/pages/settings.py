@@ -1,14 +1,22 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+import logging
+from pathlib import Path
+
+from PySide6.QtCore import Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
+    QFileDialog,
     QFormLayout,
     QFrame,
     QHBoxLayout,
     QKeySequenceEdit,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QScrollArea,
     QSlider,
     QSpinBox,
@@ -17,10 +25,15 @@ from PySide6.QtWidgets import (
 )
 
 from scmm.localization import TranslationService
-from scmm.resource_loader import load_optional_icon
+from scmm.resource_loader import load_optional_icon, optional_resource_path
+from scmm.settings import AppSettings, SettingsStore
+from scmm.shortcuts import deserialize_key_sequence, serialize_key_sequence
+from scmm.steam import SteamService
 from scmm.ui.pages.base import LocalizedPage
 from scmm.ui.widgets import CompactComboBox
 from scmm.ui.widgets.forms import action_button, add_form_row, section
+
+LOGGER = logging.getLogger("scmm.ui.settings")
 
 
 def horizontal_widget(*widgets: QWidget) -> QWidget:
@@ -40,8 +53,18 @@ def configured_spin(value: int, minimum: int, maximum: int) -> QSpinBox:
 
 
 class SettingsPage(LocalizedPage):
-    def __init__(self, translator: TranslationService) -> None:
+    game_directory_changed = Signal(str)
+
+    def __init__(
+        self,
+        translator: TranslationService,
+        settings_store: SettingsStore,
+        steam_service: SteamService,
+    ) -> None:
         super().__init__(translator)
+        self.settings_store = settings_store
+        self.steam_service = steam_service
+        self._loading_settings = True
         root = QVBoxLayout(self)
         self.scroll = QScrollArea()
         self.scroll.setObjectName("settingsScrollArea")
@@ -68,12 +91,12 @@ class SettingsPage(LocalizedPage):
         game_form = QFormLayout(game_path)
         self.game_path_edit = QLineEdit()
         self.game_path_edit.setObjectName("gamePathEdit")
-        browse_game = action_button(self, "common.browse", "browseGameButton")
+        self.browse_game_button = action_button(self, "common.browse", "browseGameButton")
         add_form_row(
             self,
             game_form,
             "settings.game_path.label",
-            horizontal_widget(self.game_path_edit, browse_game),
+            horizontal_widget(self.game_path_edit, self.browse_game_button),
         )
         layout.addWidget(game_path)
 
@@ -81,12 +104,16 @@ class SettingsPage(LocalizedPage):
         launcher_form = QFormLayout(launcher)
         self.launcher_edit = QLineEdit()
         self.launcher_edit.setObjectName("seamlessExeEdit")
-        browse_launcher = action_button(self, "common.browse", "browseLauncherButton")
+        self.browse_launcher_button = action_button(
+            self,
+            "common.browse",
+            "browseLauncherButton",
+        )
         add_form_row(
             self,
             launcher_form,
             "settings.launcher.executable",
-            horizontal_widget(self.launcher_edit, browse_launcher),
+            horizontal_widget(self.launcher_edit, self.browse_launcher_button),
         )
         self.launcher_auto_update = QCheckBox()
         self.launcher_auto_update.setChecked(True)
@@ -98,26 +125,33 @@ class SettingsPage(LocalizedPage):
         steam_form = QFormLayout(steam)
         self.steam_edit = QLineEdit()
         self.steam_edit.setObjectName("steamExeEdit")
-        browse_steam = action_button(self, "common.browse", "browseSteamButton")
-        detect_steam = action_button(self, "settings.steam.auto_detect", "detectSteamButton")
+        self.browse_steam_button = action_button(self, "common.browse", "browseSteamButton")
+        self.detect_steam_button = action_button(
+            self,
+            "settings.steam.auto_detect",
+            "detectSteamButton",
+        )
         add_form_row(
             self,
             steam_form,
             "settings.steam.executable",
-            horizontal_widget(self.steam_edit, browse_steam, detect_steam),
+            horizontal_widget(
+                self.steam_edit,
+                self.browse_steam_button,
+                self.detect_steam_button,
+            ),
         )
-        steam_status = QLabel()
-        steam_status.setObjectName("steamStatusLabel")
-        steam_status.setProperty("role", "danger")
-        self.bind(steam_status.setText, "settings.steam.not_running")
-        steam_form.addRow(steam_status)
+        self.steam_status = QLabel()
+        self.steam_status.setObjectName("steamStatusLabel")
+        self.steam_status.setProperty("role", "danger")
+        steam_form.addRow(self.steam_status)
         self.silent_steam = QCheckBox()
         self.silent_steam.setChecked(False)
         self.bind(self.silent_steam.setText, "settings.steam.silent")
         steam_form.addRow(self.silent_steam)
         self.steam_id_combo = CompactComboBox()
         self.steam_id_combo.setObjectName("steamIdCombo")
-        self.steam_id_combo.addItem("")
+        self.steam_id_combo.addItem("", "")
         self.bind(
             lambda text: self.steam_id_combo.setItemText(0, text),
             "settings.steam.choose_id",
@@ -176,24 +210,37 @@ class SettingsPage(LocalizedPage):
         backup_form = QFormLayout(backup)
         self.backup_format = CompactComboBox()
         self.backup_format.setObjectName("backupFormatCombo")
-        self.backup_format.addItem("ER0000.co2")
-        self.backup_format.addItem("ER0000.sl2")
+        self.backup_format.addItem("ER0000.co2", "ER0000.co2")
+        self.backup_format.addItem("ER0000.sl2", "ER0000.sl2")
         add_form_row(self, backup_form, "settings.backup.format", self.backup_format)
         self.backup_folder = QLineEdit()
         self.backup_folder.setObjectName("backupFolderEdit")
-        browse_backup = action_button(self, "common.browse", "browseBackupFolderButton")
+        self.browse_backup_button = action_button(
+            self,
+            "common.browse",
+            "browseBackupFolderButton",
+        )
+        self.open_backup_button = action_button(
+            self,
+            "common.open",
+            "openBackupFolderButton",
+        )
         add_form_row(
             self,
             backup_form,
             "settings.backup.folder",
-            horizontal_widget(self.backup_folder, browse_backup),
+            horizontal_widget(
+                self.backup_folder,
+                self.browse_backup_button,
+                self.open_backup_button,
+            ),
         )
         self.backup_method = CompactComboBox()
         self.backup_method.setObjectName("backupMethodCombo")
         for index, key in enumerate(
             ("settings.backup.fixed_interval", "settings.backup.event_monitoring")
         ):
-            self.backup_method.addItem("")
+            self.backup_method.addItem("", index)
             self.bind(
                 lambda text, item_index=index: self.backup_method.setItemText(item_index, text),
                 key,
@@ -233,3 +280,245 @@ class SettingsPage(LocalizedPage):
         layout.addStretch(1)
         self.scroll.setWidget(content)
         root.addWidget(self.scroll)
+
+        self.notification_sound = QSoundEffect(self)
+        notification_path = optional_resource_path("save_notification.wav")
+        if notification_path is not None:
+            self.notification_sound.setSource(QUrl.fromLocalFile(str(notification_path)))
+
+        self._apply_settings(self.settings_store.ensure_exists())
+        self._connect_controls()
+        self._loading_settings = False
+        self._refresh_steam_profiles()
+        self._refresh_steam_status()
+        self.steam_status_timer = QTimer(self)
+        self.steam_status_timer.setInterval(2000)
+        self.steam_status_timer.timeout.connect(self._refresh_steam_status)
+        self.steam_status_timer.start()
+
+    def _apply_settings(self, settings: AppSettings) -> None:
+        self.language_combo.setCurrentIndex(
+            max(self.language_combo.findData(settings.preferred_language), 0)
+        )
+        self.game_path_edit.setText(settings.mod_path)
+        self.launcher_edit.setText(settings.game_exe_path)
+        self.launcher_auto_update.setChecked(settings.auto_check_updates)
+        self.steam_edit.setText(settings.steam_exe_path)
+        self.silent_steam.setChecked(settings.run_steam_silently)
+        self.fps_target.setValue(settings.fps_target)
+        self.backup_format.setCurrentIndex(
+            max(
+                self.backup_format.findData(settings.save_file_type),
+                0,
+            )
+        )
+        self.backup_folder.setText(settings.backup_directory)
+        self.backup_method.setCurrentIndex(
+            max(
+                self.backup_method.findData(settings.backup_method),
+                0,
+            )
+        )
+        self.backup_interval.setValue(settings.auto_backup_interval)
+        self.maximum_backups.setValue(settings.max_backups)
+        self.notification_sounds.setChecked(settings.enable_sounds)
+        self.notification_volume.setValue(settings.sound_volume)
+        shortcut_values = (
+            settings.save_backup_key,
+            settings.load_backup_key,
+            settings.start_auto_backup_key,
+            settings.stop_auto_backup_key,
+        )
+        for editor, value in zip(self.shortcut_edits, shortcut_values, strict=True):
+            editor.setKeySequence(deserialize_key_sequence(value))
+        self._update_backup_open_button(settings.backup_directory)
+
+    def _connect_controls(self) -> None:
+        self.language_combo.currentIndexChanged.connect(
+            lambda _index: self._persist(preferred_language=str(self.language_combo.currentData()))
+        )
+        self.browse_game_button.clicked.connect(self._browse_game_directory)
+        self.game_path_edit.editingFinished.connect(self._save_game_directory)
+        self.browse_launcher_button.clicked.connect(self._browse_launcher)
+        self.launcher_edit.editingFinished.connect(
+            lambda: self._persist(game_exe_path=self.launcher_edit.text().strip())
+        )
+        self.launcher_auto_update.toggled.connect(
+            lambda checked: self._persist(auto_check_updates=checked)
+        )
+        self.browse_steam_button.clicked.connect(self._browse_steam)
+        self.detect_steam_button.clicked.connect(self._detect_steam)
+        self.steam_edit.editingFinished.connect(self._save_steam_path)
+        self.silent_steam.toggled.connect(lambda checked: self._persist(run_steam_silently=checked))
+        self.steam_id_combo.currentIndexChanged.connect(
+            lambda _index: self._persist(steam_id=str(self.steam_id_combo.currentData() or ""))
+        )
+        self.fps_target.valueChanged.connect(lambda value: self._persist(fps_target=value))
+        self.backup_format.currentIndexChanged.connect(
+            lambda _index: self._persist(save_file_type=str(self.backup_format.currentData()))
+        )
+        self.browse_backup_button.clicked.connect(self._browse_backup_directory)
+        self.open_backup_button.clicked.connect(self._open_backup_directory)
+        self.backup_folder.textChanged.connect(self._update_backup_open_button)
+        self.backup_folder.editingFinished.connect(
+            lambda: self._persist(backup_directory=self.backup_folder.text().strip())
+        )
+        self.backup_method.currentIndexChanged.connect(
+            lambda _index: self._persist(backup_method=int(self.backup_method.currentData()))
+        )
+        self.backup_interval.valueChanged.connect(
+            lambda value: self._persist(auto_backup_interval=value)
+        )
+        self.maximum_backups.valueChanged.connect(lambda value: self._persist(max_backups=value))
+        self.notification_sounds.toggled.connect(
+            lambda checked: self._persist(enable_sounds=checked)
+        )
+        self.notification_volume.valueChanged.connect(
+            lambda value: self._persist(sound_volume=value)
+        )
+        self.notification_volume.sliderReleased.connect(self._preview_notification_sound)
+        shortcut_fields = (
+            "save_backup_key",
+            "load_backup_key",
+            "start_auto_backup_key",
+            "stop_auto_backup_key",
+        )
+        for editor, field_name in zip(self.shortcut_edits, shortcut_fields, strict=True):
+            editor.keySequenceChanged.connect(
+                lambda sequence, name=field_name: self._persist(
+                    **{name: serialize_key_sequence(sequence)}
+                )
+            )
+
+    def _persist(self, **changes: object) -> None:
+        if self._loading_settings:
+            return
+        try:
+            self.settings_store.update(**changes)
+        except OSError:
+            LOGGER.exception("Unable to save manager settings")
+
+    def _browse_game_directory(self) -> None:
+        selected = QFileDialog.getExistingDirectory(
+            self,
+            self.translator.translate("settings.game_path.dialog"),
+            self.game_path_edit.text().strip(),
+        )
+        if not selected:
+            return
+        self.game_path_edit.setText(selected)
+        candidate_launcher = Path(selected) / "ersc_launcher.exe"
+        if not self.launcher_edit.text().strip() and candidate_launcher.is_file():
+            self.launcher_edit.setText(str(candidate_launcher))
+            self._persist(game_exe_path=str(candidate_launcher))
+        self._save_game_directory()
+
+    def _save_game_directory(self) -> None:
+        path = self.game_path_edit.text().strip()
+        self._persist(mod_path=path)
+        self.game_directory_changed.emit(path)
+
+    def _browse_launcher(self) -> None:
+        selected, _filter = QFileDialog.getOpenFileName(
+            self,
+            self.translator.translate("settings.launcher.dialog"),
+            self.launcher_edit.text().strip() or self.game_path_edit.text().strip(),
+            "Executable (*.exe)",
+        )
+        if selected:
+            self.launcher_edit.setText(selected)
+            self._persist(game_exe_path=selected)
+
+    def _browse_steam(self) -> None:
+        selected, _filter = QFileDialog.getOpenFileName(
+            self,
+            self.translator.translate("settings.steam.dialog"),
+            self.steam_edit.text().strip(),
+            "Steam (Steam.exe);;Executable (*.exe)",
+        )
+        if selected:
+            self.steam_edit.setText(selected)
+            self._save_steam_path()
+
+    def _detect_steam(self) -> None:
+        detected = self.steam_service.detect_executable()
+        if detected is None:
+            QMessageBox.warning(
+                self,
+                self.translator.translate("settings.steam.not_found_title"),
+                self.translator.translate("settings.steam.not_found_message"),
+            )
+            return
+        self.steam_edit.setText(str(detected))
+        self._save_steam_path()
+        QMessageBox.information(
+            self,
+            self.translator.translate("settings.steam.detected_title"),
+            self.translator.translate("settings.steam.detected_message", path=detected),
+        )
+
+    def _save_steam_path(self) -> None:
+        self._persist(steam_exe_path=self.steam_edit.text().strip())
+        self._refresh_steam_profiles()
+        self._refresh_steam_status()
+
+    def _refresh_steam_profiles(self) -> None:
+        selected_id = self.settings_store.load().steam_id
+        executable = self.steam_edit.text().strip()
+        profiles = self.steam_service.profiles(executable) if executable else ()
+        profiles = tuple(sorted(profiles, key=lambda profile: not profile.most_recent))
+        self.steam_id_combo.blockSignals(True)
+        self.steam_id_combo.clear()
+        self.steam_id_combo.addItem(
+            self.translator.translate("settings.steam.choose_id"),
+            "",
+        )
+        for profile in profiles:
+            self.steam_id_combo.addItem(profile.display_name, profile.steam_id)
+        selected_index = self.steam_id_combo.findData(selected_id)
+        if selected_id and selected_index < 0:
+            self.steam_id_combo.addItem(f"Steam ID {selected_id}", selected_id)
+            selected_index = self.steam_id_combo.count() - 1
+        self.steam_id_combo.setCurrentIndex(max(selected_index, 0))
+        self.steam_id_combo.blockSignals(False)
+
+    def _refresh_steam_status(self) -> None:
+        running = self.steam_service.is_running()
+        self.steam_status.setText(
+            self.translator.translate(
+                "settings.steam.running" if running else "settings.steam.not_running"
+            )
+        )
+        self.steam_status.setProperty("role", "success" if running else "danger")
+        style = self.steam_status.style()
+        style.unpolish(self.steam_status)
+        style.polish(self.steam_status)
+
+    def _browse_backup_directory(self) -> None:
+        selected = QFileDialog.getExistingDirectory(
+            self,
+            self.translator.translate("settings.backup.dialog"),
+            self.backup_folder.text().strip(),
+        )
+        if selected:
+            self.backup_folder.setText(selected)
+            self._persist(backup_directory=selected)
+
+    def _open_backup_directory(self) -> None:
+        path = Path(self.backup_folder.text().strip())
+        if path.is_dir():
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+
+    def _update_backup_open_button(self, value: str) -> None:
+        path = Path(value.strip()) if value.strip() else None
+        self.open_backup_button.setVisible(path is not None)
+        self.open_backup_button.setEnabled(path is not None and path.is_dir())
+
+    def _preview_notification_sound(self) -> None:
+        if not self.notification_sounds.isChecked():
+            return
+        self.notification_sound.setVolume(self.notification_volume.value() / 100)
+        if self.notification_sound.source().isEmpty():
+            QApplication.beep()
+        else:
+            self.notification_sound.play()
