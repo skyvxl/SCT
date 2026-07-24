@@ -76,7 +76,7 @@ wheels = [
 ]
 
 [[package]]
-name = "seamless-coop-mod-manager"
+name = "seamless-coop-toolkit"
 version = "0.1.0.dev0"
 source = { editable = "." }
 dependencies = [

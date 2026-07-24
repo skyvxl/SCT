@@ -13,14 +13,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.ersc_settings import ErscSettings, ErscSettingsStore
-from scmm.localization import TranslationService
-from scmm.settings import SettingsStore
-from scmm.ui.pages.base import LocalizedPage
-from scmm.ui.widgets import CompactComboBox
-from scmm.ui.widgets.forms import action_button, add_form_row, section
+from sct.ersc_settings import ErscSettings, ErscSettingsStore
+from sct.localization import TranslationService
+from sct.settings import SettingsStore
+from sct.ui.pages.base import LocalizedPage
+from sct.ui.widgets import CompactComboBox
+from sct.ui.widgets.forms import action_button, add_form_row, section
 
-LOGGER = logging.getLogger("scmm.ui.seamless")
+LOGGER = logging.getLogger("sct.ui.seamless")
 
 
 def spin_box(value: int, minimum: int = 0, maximum: int = 999) -> QSpinBox:

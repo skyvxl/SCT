@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from PySide6.QtGui import QFontMetrics
 
-from scmm.qt_environment import configure_qt_environment
+from sct.qt_environment import configure_qt_environment
 from tests.qt_helpers import get_qapplication
 
 

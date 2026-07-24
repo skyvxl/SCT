@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 from PySide6.QtWidgets import QWidget
 
-from scmm.localization import TranslationService
+from sct.localization import TranslationService
 
 
 @dataclass(slots=True)

@@ -6,8 +6,8 @@ from pathlib import Path
 
 from PySide6.QtGui import QIcon
 
-LOGGER = logging.getLogger("scmm.resources")
-RESOURCE_PACKAGE = "scmm.resources"
+LOGGER = logging.getLogger("sct.resources")
+RESOURCE_PACKAGE = "sct.resources"
 
 
 def resource_root() -> Path:

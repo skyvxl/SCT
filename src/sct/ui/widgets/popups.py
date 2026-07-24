@@ -4,7 +4,7 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import QComboBox, QMenu, QWidget
 
-from scmm.ui.native_windows import request_square_corners
+from sct.ui.native_windows import request_square_corners
 
 
 class CompactComboBox(QComboBox):

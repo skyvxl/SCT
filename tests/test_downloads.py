@@ -7,7 +7,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from scmm.downloads import DownloadError, UnsafeArchiveError, download_file, safe_extract_zip
+from sct.downloads import DownloadError, UnsafeArchiveError, download_file, safe_extract_zip
 
 
 class DownloadTests(unittest.TestCase):

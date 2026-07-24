@@ -6,7 +6,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
 
-from scmm.qt_environment import configure_qt_environment
+from sct.qt_environment import configure_qt_environment
 
 
 def get_qapplication() -> QApplication:

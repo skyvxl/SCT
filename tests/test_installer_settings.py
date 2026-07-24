@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scmm.installer_settings import merge_ersc_settings
+from sct.installer_settings import merge_ersc_settings
 
 
 class InstallerSettingsTests(unittest.TestCase):

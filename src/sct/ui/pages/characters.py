@@ -3,9 +3,9 @@ from __future__ import annotations
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QGridLayout, QLabel, QVBoxLayout
 
-from scmm.localization import TranslationService
-from scmm.ui.pages.base import LocalizedPage
-from scmm.ui.widgets.forms import action_button, translated_table
+from sct.localization import TranslationService
+from sct.ui.pages.base import LocalizedPage
+from sct.ui.widgets.forms import action_button, translated_table
 
 
 class CharactersPage(LocalizedPage):

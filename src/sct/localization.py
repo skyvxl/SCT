@@ -8,9 +8,9 @@ from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 
-from scmm.resource_loader import resource_path
+from sct.resource_loader import resource_path
 
-LOGGER = logging.getLogger("scmm.localization")
+LOGGER = logging.getLogger("sct.localization")
 
 
 class TranslationCatalogError(RuntimeError):

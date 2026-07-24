@@ -5,14 +5,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scmm.localization import TranslationCatalogError, TranslationService
+from sct.localization import TranslationCatalogError, TranslationService
 
 
 class TranslationServiceTests(unittest.TestCase):
     def test_loads_packaged_russian_catalog(self) -> None:
         service = TranslationService()
         self.assertEqual(service.locale, "ru")
+        self.assertEqual(service.translate("app.title"), "Seamless Co-op Toolkit")
         self.assertEqual(service.translate("nav.home"), "Главная")
+        self.assertEqual(service.translate("nav.seamless"), "Seamless Co-op")
+        self.assertEqual(service.translate("nav.backups"), "Резервные копии")
         self.assertEqual(service.available_locales(), ("ru",))
 
     def test_formats_positional_and_named_values(self) -> None:
@@ -35,7 +38,7 @@ class TranslationServiceTests(unittest.TestCase):
 
     def test_missing_key_returns_key_and_logs_warning(self) -> None:
         service = TranslationService()
-        with self.assertLogs("scmm.localization", level="WARNING") as logs:
+        with self.assertLogs("sct.localization", level="WARNING") as logs:
             value = service.translate("missing.translation.key")
 
         self.assertEqual(value, "missing.translation.key")

@@ -4,7 +4,7 @@ import unittest
 
 from PySide6.QtGui import QKeySequence
 
-from scmm.shortcuts import deserialize_key_sequence, serialize_key_sequence
+from sct.shortcuts import deserialize_key_sequence, serialize_key_sequence
 
 
 class ShortcutSerializationTests(unittest.TestCase):

@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 from PySide6.QtWidgets import QLineEdit
 
-from scmm.installer import InstallResult
-from scmm.localization import TranslationService
-from scmm.settings import SettingsStore
-from scmm.ui.dialogs.auto_setup import AutoSetupDialog
+from sct.installer import InstallResult
+from sct.localization import TranslationService
+from sct.settings import SettingsStore
+from sct.ui.dialogs.auto_setup import AutoSetupDialog
 from tests.qt_helpers import get_qapplication
 
 
@@ -41,7 +41,7 @@ class AutoSetupDialogTests(unittest.TestCase):
                 game / "mod",
             )
 
-            with patch("scmm.ui.dialogs.auto_setup.QMessageBox.information"):
+            with patch("sct.ui.dialogs.auto_setup.QMessageBox.information"):
                 dialog._handle_success(result)
 
             persisted = settings.load()
@@ -76,7 +76,7 @@ class AutoSetupDialogTests(unittest.TestCase):
             result = InstallResult("v1", game, game / "ersc_launcher.exe", game / "mod")
 
             with (
-                patch("scmm.ui.dialogs.auto_setup.QMessageBox.information"),
+                patch("sct.ui.dialogs.auto_setup.QMessageBox.information"),
                 patch.object(dialog, "accept") as accept,
             ):
                 dialog._handle_success(result)

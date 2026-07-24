@@ -7,13 +7,13 @@ from PySide6.QtCore import QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QPushButton, QVBoxLayout
 
-from scmm.localization import TranslationService
-from scmm.resource_loader import load_optional_icon
-from scmm.settings import AppSettings, SettingsStore
-from scmm.steam import SteamService
-from scmm.ui.pages.base import LocalizedPage
+from sct.localization import TranslationService
+from sct.resource_loader import load_optional_icon
+from sct.settings import AppSettings, SettingsStore
+from sct.steam import SteamService
+from sct.ui.pages.base import LocalizedPage
 
-LOGGER = logging.getLogger("scmm.ui.home")
+LOGGER = logging.getLogger("sct.ui.home")
 
 
 class HomePage(LocalizedPage):

@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.ui.pages.base import LocalizedPage
+from sct.ui.pages.base import LocalizedPage
 
 
 def section(page: LocalizedPage, title_key: str) -> QGroupBox:

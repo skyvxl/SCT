@@ -3,8 +3,8 @@ from __future__ import annotations
 import unittest
 from unittest.mock import patch
 
-from scmm.application import main
-from scmm.localization import TranslationCatalogError
+from sct.application import main
+from sct.localization import TranslationCatalogError
 from tests.qt_helpers import get_qapplication
 
 
@@ -13,10 +13,10 @@ class ApplicationTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.application = get_qapplication()
 
-    @patch("scmm.application.configure_logging")
-    @patch("scmm.application.QMessageBox.critical")
+    @patch("sct.application.configure_logging")
+    @patch("sct.application.QMessageBox.critical")
     @patch(
-        "scmm.application.TranslationService",
+        "sct.application.TranslationService",
         side_effect=TranslationCatalogError("broken ru.json"),
     )
     def test_catalog_failure_returns_nonzero_before_event_loop(
@@ -25,16 +25,16 @@ class ApplicationTests(unittest.TestCase):
         critical: object,
         _logging: object,
     ) -> None:
-        with self.assertLogs("scmm.application", level="ERROR") as logs:
+        with self.assertLogs("sct.application", level="ERROR") as logs:
             result = main([])
         self.assertEqual(result, 1)
         critical.assert_called_once()
         self.assertTrue(any("Unable to initialize localization" in entry for entry in logs.output))
 
-    @patch("scmm.application.configure_logging")
-    @patch("scmm.application.QMessageBox.critical")
-    @patch("scmm.application.SettingsStore")
-    @patch("scmm.application.build_main_window", side_effect=RuntimeError("broken window"))
+    @patch("sct.application.configure_logging")
+    @patch("sct.application.QMessageBox.critical")
+    @patch("sct.application.SettingsStore")
+    @patch("sct.application.build_main_window", side_effect=RuntimeError("broken window"))
     def test_unhandled_startup_failure_is_reported_without_event_loop(
         self,
         _window: object,
@@ -42,7 +42,7 @@ class ApplicationTests(unittest.TestCase):
         critical: object,
         _logging: object,
     ) -> None:
-        with self.assertLogs("scmm.application", level="ERROR") as logs:
+        with self.assertLogs("sct.application", level="ERROR") as logs:
             result = main([])
         self.assertEqual(result, 1)
         critical.assert_called_once()

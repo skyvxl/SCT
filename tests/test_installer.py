@@ -6,9 +6,9 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from scmm.installer import InstallerError, ModInstaller
-from scmm.releases import ReleaseAsset
-from scmm.runtime_config import RuntimeConfig
+from sct.installer import InstallerError, ModInstaller
+from sct.releases import ReleaseAsset
+from sct.runtime_config import RuntimeConfig
 
 
 class FakeReleaseClient:

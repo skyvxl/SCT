@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from scmm.localization import TranslationService
-from scmm.settings import SettingsStore
-from scmm.steam import SteamService
-from scmm.ui.page_spec import PageSpec
-from scmm.ui.pages.backups import BackupsPage
-from scmm.ui.pages.characters import CharactersPage
-from scmm.ui.pages.current_game import CurrentGamePage
-from scmm.ui.pages.home import HomePage
-from scmm.ui.pages.seamless import SeamlessPage
-from scmm.ui.pages.settings import SettingsPage
+from sct.localization import TranslationService
+from sct.settings import SettingsStore
+from sct.steam import SteamService
+from sct.ui.page_spec import PageSpec
+from sct.ui.pages.backups import BackupsPage
+from sct.ui.pages.characters import CharactersPage
+from sct.ui.pages.current_game import CurrentGamePage
+from sct.ui.pages.home import HomePage
+from sct.ui.pages.seamless import SeamlessPage
+from sct.ui.pages.settings import SettingsPage
 
 
 def build_page_specs(

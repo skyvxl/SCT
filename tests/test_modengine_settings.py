@@ -4,10 +4,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scmm.localization import TranslationService
-from scmm.modengine import ModEngineConfig
-from scmm.settings import SettingsStore
-from scmm.ui.pages.settings import SettingsPage
+from sct.localization import TranslationService
+from sct.modengine import ModEngineConfig
+from sct.settings import SettingsStore
+from sct.ui.pages.settings import SettingsPage
 from tests.qt_helpers import get_qapplication
 
 

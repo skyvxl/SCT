@@ -1,6 +1,6 @@
-# Seamless Co-op Mod Manager
+# Seamless Co-op Toolkit
 
-A Windows desktop manager for Elden Ring Seamless Co-op, rebuilt with PySide6.
+A Windows desktop toolkit for Elden Ring Seamless Co-op, rebuilt with PySide6.
 
 The current development milestone reconstructs the application interface. Game
 launching, save management, memory editing, backups, and updates are not active
@@ -10,7 +10,7 @@ yet.
 
 ```powershell
 uv sync --dev
-uv run scmm
+uv run sct
 uv run python -m unittest discover -s tests -v
 ```
 

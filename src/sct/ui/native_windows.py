@@ -7,7 +7,7 @@ from ctypes import wintypes
 
 from PySide6.QtWidgets import QWidget
 
-LOGGER = logging.getLogger("scmm.ui.native_windows")
+LOGGER = logging.getLogger("sct.ui.native_windows")
 DWMWA_WINDOW_CORNER_PREFERENCE = 33
 DWMWCP_DONOTROUND = 1
 

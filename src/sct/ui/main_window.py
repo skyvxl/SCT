@@ -17,14 +17,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.localization import TranslationService
-from scmm.resource_loader import load_optional_icon
-from scmm.settings import SettingsStore
-from scmm.ui.dialogs.about import AboutDialog
-from scmm.ui.dialogs.auto_setup import AutoSetupDialog, InstallerFactory
-from scmm.ui.page_spec import PageSpec
-from scmm.ui.widgets.popups import SquarePopupMenu
-from scmm.version import DISPLAY_VERSION
+from sct.localization import TranslationService
+from sct.resource_loader import load_optional_icon
+from sct.settings import SettingsStore
+from sct.ui.dialogs.about import AboutDialog
+from sct.ui.dialogs.auto_setup import AutoSetupDialog, InstallerFactory
+from sct.ui.page_spec import PageSpec
+from sct.ui.widgets.popups import SquarePopupMenu
+from sct.version import DISPLAY_VERSION
 
 AboutFactory = Callable[[TranslationService, QWidget | None], QDialog]
 AutoSetupFactory = Callable[

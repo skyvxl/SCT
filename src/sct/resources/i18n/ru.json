@@ -1,13 +1,13 @@
 {
   "language_name": "Русский",
   "app": {
-    "title": "Seamless Co-op Mod Manager"
+    "title": "Seamless Co-op Toolkit"
   },
   "nav": {
     "home": "Главная",
-    "seamless": "Меню: Seamless Co-op",
+    "seamless": "Seamless Co-op",
     "current_game": "Текущая игра",
-    "backups": "Save: Резервные копии",
+    "backups": "Резервные копии",
     "characters": "Список персонажей",
     "settings": "Настройки менеджера"
   },
@@ -31,7 +31,7 @@
     "open_folder": "Открыть папку"
   },
   "about": {
-    "product_name": "Seamless Co-op Mod Manager",
+    "product_name": "Seamless Co-op Toolkit",
     "version": "Версия: {version}",
     "description": "Это приложение поможет вам управлять Seamless Co-op Mod для Elden Ring.",
     "maintainer": "Разработка и поддержка: skyvxl",

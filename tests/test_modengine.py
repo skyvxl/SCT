@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scmm.modengine import ModEngineConfig, ModEngineConfigError
+from sct.modengine import ModEngineConfig, ModEngineConfigError
 
 
 class ModEngineConfigTests(unittest.TestCase):

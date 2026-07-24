@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scmm.runtime_config import RuntimeConfig, RuntimeConfigError
+from sct.runtime_config import RuntimeConfig, RuntimeConfigError
 
 
 class RuntimeConfigTests(unittest.TestCase):

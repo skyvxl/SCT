@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from scmm.steam import (
+from sct.steam import (
     STEAM_ID64_BASE,
     SteamService,
     parse_loginusers,

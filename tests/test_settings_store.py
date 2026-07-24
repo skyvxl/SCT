@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from scmm.settings import AppSettings, SettingsStore, default_settings_path
+from sct.settings import AppSettings, SettingsStore, default_settings_path
 
 
 class SettingsStoreTests(unittest.TestCase):

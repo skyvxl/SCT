@@ -4,13 +4,13 @@ import logging
 import os
 from pathlib import Path
 
-LOGGER_NAME = "scmm"
+LOGGER_NAME = "sct"
 
 
 def log_file_path() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     base = Path(local_app_data) if local_app_data else Path.home() / "AppData" / "Local"
-    return base / "SeamlessCoopModManager" / "logs" / "scmm.log"
+    return base / "SeamlessCoopModManager" / "logs" / "sct.log"
 
 
 def configure_logging() -> Path | None:

@@ -6,17 +6,17 @@ from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from scmm.installer import ModInstaller
-from scmm.localization import TranslationCatalogError, TranslationService
-from scmm.logging_config import configure_logging
-from scmm.resource_loader import load_stylesheet
-from scmm.runtime_config import RuntimeConfig
-from scmm.settings import SettingsStore
-from scmm.steam import SteamService
-from scmm.ui.main_window import MainWindow
-from scmm.ui.pages import build_page_specs
+from sct.installer import ModInstaller
+from sct.localization import TranslationCatalogError, TranslationService
+from sct.logging_config import configure_logging
+from sct.resource_loader import load_stylesheet
+from sct.runtime_config import RuntimeConfig
+from sct.settings import SettingsStore
+from sct.steam import SteamService
+from sct.ui.main_window import MainWindow
+from sct.ui.pages import build_page_specs
 
-LOGGER = logging.getLogger("scmm.application")
+LOGGER = logging.getLogger("sct.application")
 
 
 def get_application(arguments: Sequence[str] | None = None) -> QApplication:
@@ -24,7 +24,7 @@ def get_application(arguments: Sequence[str] | None = None) -> QApplication:
     if existing is not None:
         return existing
     application = QApplication(list(arguments) if arguments is not None else sys.argv)
-    application.setApplicationName("Seamless Co-op Mod Manager")
+    application.setApplicationName("Seamless Co-op Toolkit")
     application.setOrganizationName("skyvxl")
     return application
 

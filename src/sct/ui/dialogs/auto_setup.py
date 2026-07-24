@@ -18,9 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.installer import InstallResult, ModInstaller
-from scmm.localization import TranslationService
-from scmm.settings import SettingsStore
+from sct.installer import InstallResult, ModInstaller
+from sct.localization import TranslationService
+from sct.settings import SettingsStore
 
 InstallerFactory = Callable[[], ModInstaller]
 

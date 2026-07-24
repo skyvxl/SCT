@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from scmm.releases import ReleaseError, select_release_asset
+from sct.releases import ReleaseError, select_release_asset
 
 
 class ReleaseSelectionTests(unittest.TestCase):

@@ -6,11 +6,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from scmm.downloads import download_file, safe_extract_zip
-from scmm.installer_settings import merge_ersc_settings
-from scmm.modengine import ModEngineConfig
-from scmm.releases import GitHubReleaseClient
-from scmm.runtime_config import RuntimeConfig
+from sct.downloads import download_file, safe_extract_zip
+from sct.installer_settings import merge_ersc_settings
+from sct.modengine import ModEngineConfig
+from sct.releases import GitHubReleaseClient
+from sct.runtime_config import RuntimeConfig
 
 MODENGINE2_URL = (
     "https://github.com/soulsmods/ModEngine2/releases/download/"
@@ -158,7 +158,7 @@ class ModInstaller:
         try:
             emit("release", 0)
             release = self.release_client.latest_asset(self.config.ersc_release_api_url)
-            with tempfile.TemporaryDirectory(prefix="scmm-install-") as temporary:
+            with tempfile.TemporaryDirectory(prefix="sct-install-") as temporary:
                 workspace = Path(temporary)
                 me2_archive = workspace / "modengine2.zip"
                 ersc_archive = workspace / release.name

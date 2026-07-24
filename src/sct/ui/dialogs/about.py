@@ -10,9 +10,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.localization import TranslationService
-from scmm.resource_loader import load_optional_icon
-from scmm.version import DISPLAY_VERSION
+from sct.localization import TranslationService
+from sct.resource_loader import load_optional_icon
+from sct.version import DISPLAY_VERSION
 
 
 class AboutDialog(QDialog):

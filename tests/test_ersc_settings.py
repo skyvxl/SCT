@@ -5,7 +5,7 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
-from scmm.ersc_settings import ErscSettings, ErscSettingsStore
+from sct.ersc_settings import ErscSettings, ErscSettingsStore
 
 
 class ErscSettingsStoreTests(unittest.TestCase):

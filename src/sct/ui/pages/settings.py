@@ -26,18 +26,18 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from scmm.installer import InstallResult
-from scmm.localization import TranslationService
-from scmm.modengine import ModEngineConfig, ModEngineConfigError
-from scmm.resource_loader import load_optional_icon, optional_resource_path
-from scmm.settings import AppSettings, SettingsStore
-from scmm.shortcuts import deserialize_key_sequence, serialize_key_sequence
-from scmm.steam import SteamService
-from scmm.ui.pages.base import LocalizedPage
-from scmm.ui.widgets import CompactComboBox
-from scmm.ui.widgets.forms import action_button, add_form_row, section
+from sct.installer import InstallResult
+from sct.localization import TranslationService
+from sct.modengine import ModEngineConfig, ModEngineConfigError
+from sct.resource_loader import load_optional_icon, optional_resource_path
+from sct.settings import AppSettings, SettingsStore
+from sct.shortcuts import deserialize_key_sequence, serialize_key_sequence
+from sct.steam import SteamService
+from sct.ui.pages.base import LocalizedPage
+from sct.ui.widgets import CompactComboBox
+from sct.ui.widgets.forms import action_button, add_form_row, section
 
-LOGGER = logging.getLogger("scmm.ui.settings")
+LOGGER = logging.getLogger("sct.ui.settings")
 
 
 def horizontal_widget(*widgets: QWidget) -> QWidget:
