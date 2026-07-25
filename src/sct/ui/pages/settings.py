@@ -26,7 +26,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from sct.errors import localized_error_message
+from sct.errors import LocalizedError, localized_error_message
+from sct.fps_patcher import EldenRingFpsPatcher
 from sct.installer import InstallResult
 from sct.localization import TranslationService
 from sct.modengine import ModEngineConfig, ModEngineConfigError
@@ -61,10 +62,10 @@ class SettingsPage(LocalizedPage):
     game_directory_changed = Signal(str)
 
     def __init__(
-        self,
-        translator: TranslationService,
-        settings_store: SettingsStore,
-        steam_service: SteamService,
+            self,
+            translator: TranslationService,
+            settings_store: SettingsStore,
+            steam_service: SteamService,
     ) -> None:
         super().__init__(translator)
         self.settings_store = settings_store
@@ -214,14 +215,24 @@ class SettingsPage(LocalizedPage):
 
         fps = section(self, "settings.fps.title")
         fps_form = QFormLayout(fps)
-        current_fps = QLabel()
-        self.bind(current_fps.setText, "settings.fps.current", value="60.0")
-        fps_form.addRow(current_fps)
-        self.fps_target = configured_spin(60, 30, 360)
+        self.current_fps_label = QLabel()
+        self.bind(self.current_fps_label.setText, "settings.fps.current", value="60.0")
+        fps_form.addRow(self.current_fps_label)
+        self.fps_target = configured_spin(60, 1, 1000)
         self.fps_target.setObjectName("fpsTargetSpin")
         add_form_row(self, fps_form, "settings.fps.target", self.fps_target)
-        fps_form.addRow(action_button(self, "settings.fps.choose_exe", "chooseEldenRingExeButton"))
-        fps_form.addRow(action_button(self, "settings.fps.restore", "restoreEldenRingExeButton"))
+        self.apply_fps_button = action_button(
+            self,
+            "settings.fps.apply",
+            "applyEldenRingFpsButton",
+        )
+        fps_form.addRow(self.apply_fps_button)
+        self.restore_fps_button = action_button(
+            self,
+            "settings.fps.restore",
+            "restoreEldenRingExeButton",
+        )
+        fps_form.addRow(self.restore_fps_button)
         layout.addWidget(fps)
 
         backup = section(self, "settings.backup.title")
@@ -256,7 +267,7 @@ class SettingsPage(LocalizedPage):
         self.backup_method = CompactComboBox()
         self.backup_method.setObjectName("backupMethodCombo")
         for index, key in enumerate(
-            ("settings.backup.fixed_interval", "settings.backup.event_monitoring")
+                ("settings.backup.fixed_interval", "settings.backup.event_monitoring")
         ):
             self.backup_method.addItem("", index)
             self.bind(
@@ -284,10 +295,10 @@ class SettingsPage(LocalizedPage):
         shortcuts_form = QFormLayout(shortcuts)
         self.shortcut_edits: list[QKeySequenceEdit] = []
         for key in (
-            "settings.backup.shortcut_save",
-            "settings.backup.shortcut_load",
-            "settings.backup.shortcut_start",
-            "settings.backup.shortcut_stop",
+                "settings.backup.shortcut_save",
+                "settings.backup.shortcut_load",
+                "settings.backup.shortcut_start",
+                "settings.backup.shortcut_stop",
         ):
             editor = QKeySequenceEdit()
             self.shortcut_edits.append(editor)
@@ -351,6 +362,7 @@ class SettingsPage(LocalizedPage):
             editor.setKeySequence(deserialize_key_sequence(value))
         self._update_backup_open_button(settings.backup_directory)
         self.refresh_modengine()
+        self._refresh_fps_state()
 
     def _connect_controls(self) -> None:
         self.language_combo.currentIndexChanged.connect(
@@ -373,7 +385,8 @@ class SettingsPage(LocalizedPage):
         self.steam_id_combo.currentIndexChanged.connect(
             lambda _index: self._persist(steam_id=str(self.steam_id_combo.currentData() or ""))
         )
-        self.fps_target.valueChanged.connect(lambda value: self._persist(fps_target=value))
+        self.apply_fps_button.clicked.connect(self._apply_fps_patch)
+        self.restore_fps_button.clicked.connect(self._restore_fps_patch)
         self.backup_format.currentIndexChanged.connect(
             lambda _index: self._persist(save_file_type=str(self.backup_format.currentData()))
         )
@@ -437,6 +450,7 @@ class SettingsPage(LocalizedPage):
         path = self.game_path_edit.text().strip()
         self._persist(mod_path=path)
         self.refresh_modengine()
+        self._refresh_fps_state()
         self.game_directory_changed.emit(path)
 
     def _open_mod_folder(self) -> None:
@@ -511,11 +525,89 @@ class SettingsPage(LocalizedPage):
         self.game_path_edit.setText(str(result.game_directory))
         self.launcher_edit.setText(str(result.launcher_path))
         self.refresh_modengine()
+        self._refresh_fps_state()
         self.game_directory_changed.emit(str(result.game_directory))
 
     def showEvent(self, event: QShowEvent) -> None:
         super().showEvent(event)
         self.refresh_modengine()
+        self._refresh_fps_state()
+
+    def _fps_patcher(self) -> EldenRingFpsPatcher:
+        game_directory = self.game_path_edit.text().strip()
+        if not game_directory:
+            raise LocalizedError(
+                "fps_game_directory_missing",
+                "Elden Ring game directory is not configured",
+            )
+        return EldenRingFpsPatcher(game_directory)
+
+    def _apply_fps_patch(self) -> None:
+        target_fps = self.fps_target.value()
+        try:
+            self._fps_patcher().patch(target_fps)
+        except (LocalizedError, OSError) as error:
+            LOGGER.exception("Unable to patch Elden Ring FPS")
+            self._show_fps_error(error)
+            self._refresh_fps_state()
+            return
+
+        self._persist(fps_target=target_fps)
+        self._refresh_fps_state()
+        QMessageBox.information(
+            self,
+            self.translator.translate("settings.fps.patch_success_title"),
+            self.translator.translate(
+                "settings.fps.patch_success_message",
+                value=target_fps,
+            ),
+        )
+
+    def _restore_fps_patch(self) -> None:
+        try:
+            self._fps_patcher().restore()
+        except (LocalizedError, OSError) as error:
+            LOGGER.exception("Unable to restore the original Elden Ring executable")
+            self._show_fps_error(error)
+            self._refresh_fps_state()
+            return
+
+        self.fps_target.setValue(60)
+        self._persist(fps_target=60)
+        self._refresh_fps_state()
+        QMessageBox.information(
+            self,
+            self.translator.translate("settings.fps.restore_success_title"),
+            self.translator.translate("settings.fps.restore_success_message"),
+        )
+
+    def _refresh_fps_state(self) -> None:
+        game_directory = self.game_path_edit.text().strip()
+        patcher = EldenRingFpsPatcher(game_directory) if game_directory else None
+        backup_exists = patcher is not None and patcher.backup_exists()
+        current_fps = self.settings_store.load().fps_target if backup_exists else 60
+        self.current_fps_label.setText(
+            self.translator.translate(
+                "settings.fps.current",
+                value=f"{current_fps:.1f}",
+            )
+        )
+        executable_exists = patcher is not None and (
+                patcher.executable_path.is_file() or patcher.backup_exists()
+        )
+        self.apply_fps_button.setEnabled(executable_exists)
+        self.restore_fps_button.setEnabled(backup_exists)
+
+    def _show_fps_error(self, error: BaseException) -> None:
+        QMessageBox.warning(
+            self,
+            self.translator.translate("settings.fps.error_title"),
+            localized_error_message(
+                self.translator,
+                error,
+                fallback_key="errors.fps_operation_failed",
+            ),
+        )
 
     def _browse_launcher(self) -> None:
         selected, _filter = QFileDialog.getOpenFileName(
