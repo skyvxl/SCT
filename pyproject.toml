@@ -6,12 +6,12 @@ build-backend = "setuptools.build_meta"
 name = "seamless-coop-toolkit"
 version = "0.1.0.dev0"
 description = "Windows toolkit for Elden Ring Seamless Co-op."
-authors = [{name = "skyvxl"}]
+authors = [{ name = "skyvxl" }]
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
-dependencies = ["PySide6>=6.10.2,<7"]
+dependencies = ["PySide6>=6.10.2,<7", "pymem>=1.14.0,<2"]
 
 [project.scripts]
 sct = "sct.application:main"
@@ -20,7 +20,7 @@ sct = "sct.application:main"
 package = true
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -33,6 +33,7 @@ sct = [
     "resources/icons/*",
     "resources/i18n/*.json",
     "resources/styles/*.qss",
+    "game/elden_ring/*.toml",
 ]
 
 [dependency-groups]

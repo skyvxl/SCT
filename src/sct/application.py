@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from sct.game.runtime import EldenRingRuntime, build_elden_ring_runtime
 from sct.installer import ModInstaller
 from sct.localization import TranslationCatalogError, TranslationService
 from sct.logging_config import configure_logging
@@ -33,10 +34,12 @@ def build_main_window(
     translator: TranslationService,
     settings_store: SettingsStore,
     steam_service: SteamService,
+    game_runtime: EldenRingRuntime | None = None,
 ) -> MainWindow:
+    runtime = game_runtime or build_elden_ring_runtime(settings_store.path)
     return MainWindow(
         translator,
-        build_page_specs(translator, settings_store, steam_service),
+        build_page_specs(translator, settings_store, steam_service, runtime),
         settings_store,
         lambda: ModInstaller(RuntimeConfig.load()),
     )

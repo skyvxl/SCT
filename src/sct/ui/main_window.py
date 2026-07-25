@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QCloseEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QDialog,
@@ -168,3 +168,10 @@ class MainWindow(QMainWindow):
         self.manager_version_label.setText(
             self.translator.translate("footer.manager_version", version=DISPLAY_VERSION)
         )
+
+    def closeEvent(self, event: QCloseEvent) -> None:
+        for page in self._pages:
+            shutdown = getattr(page.widget, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
+        super().closeEvent(event)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from sct.game.runtime import EldenRingRuntime
 from sct.localization import TranslationService
 from sct.settings import SettingsStore
 from sct.steam import SteamService
@@ -16,6 +17,7 @@ def build_page_specs(
     translator: TranslationService,
     settings_store: SettingsStore,
     steam_service: SteamService,
+    game_runtime: EldenRingRuntime,
 ) -> tuple[PageSpec, ...]:
     settings_page = SettingsPage(translator, settings_store, steam_service)
     seamless_page = SeamlessPage(translator, settings_store)
@@ -27,7 +29,11 @@ def build_page_specs(
             HomePage(translator, settings_store, steam_service),
         ),
         PageSpec("nav.seamless", "seamless.png", seamless_page),
-        PageSpec("nav.current_game", "controller.png", CurrentGamePage(translator)),
+        PageSpec(
+            "nav.current_game",
+            "controller.png",
+            CurrentGamePage(translator, game_runtime),
+        ),
         PageSpec("nav.backups", "backup.png", BackupsPage(translator)),
         PageSpec("nav.characters", "character.png", CharactersPage(translator)),
         PageSpec("nav.settings", "settings.png", settings_page),

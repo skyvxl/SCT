@@ -612,6 +612,70 @@ QProgressBar#healthProgress::chunk {
     background: #ff2020;
 }
 
+QDialog#runeDialog,
+QDialog#cheatDialog,
+QDialog#playerDetailsDialog,
+QDialog#itemSelectorDialog {
+    background: #202124;
+}
+
+QLabel#cheatDialogTitle {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+QLabel#cheatDialogDescription {
+    color: #d4d7dc;
+}
+
+QFrame#cheatRow {
+    border-bottom: 1px solid #414247;
+}
+
+QFrame#itemSlot {
+    background: #333436;
+    border: 1px solid #444548;
+    border-radius: 5px;
+}
+
+QLabel#itemSlotLabel {
+    background: #37383a;
+    border: 1px solid #47484b;
+    border-radius: 5px;
+    padding: 8px;
+}
+
+QLabel#itemSlotImage {
+    background: #343537;
+    border: 1px solid #8a8b8f;
+    border-radius: 5px;
+}
+
+QTableView#itemSelectorTable {
+    border-radius: 0;
+}
+
+QDialog#playerDetailsDialog QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    top: 8px;
+}
+
+QCheckBox#equipmentOnlyCheckbox {
+    background: transparent;
+}
+
+QPushButton#cheatToggleButton {
+    background: transparent;
+    border: none;
+    padding: 3px;
+}
+
+QPushButton#cheatToggleButton:hover {
+    background: #3a3b40;
+    border-radius: 15px;
+}
+
 QPushButton#creditButton {
     color: #de412e;
     background: transparent;
@@ -652,7 +716,7 @@ QAbstractItemView#compactComboPopupView::item {
 }
 
 QDialog#autoSetupDialog {
-    background-color: #292A2D;
+    background-color: #202124;
 }
 
 QLabel#autoSetupInstructions {
