@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import re
 import subprocess
 from collections.abc import Callable
+from ctypes import wintypes
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -15,6 +17,58 @@ except ImportError:  # pragma: no cover - the application is Windows-only
 
 STEAM_ID64_BASE = 76561197960265728
 _TOKEN_PATTERN = re.compile(r'"((?:\\.|[^"\\])*)"|([{}])')
+_TH32CS_SNAPPROCESS = 0x00000002
+_MAX_PATH = 260
+
+
+class _ProcessEntry32W(ctypes.Structure):
+    _fields_ = (
+        ("dwSize", wintypes.DWORD),
+        ("cntUsage", wintypes.DWORD),
+        ("th32ProcessID", wintypes.DWORD),
+        ("th32DefaultHeapID", ctypes.c_size_t),
+        ("th32ModuleID", wintypes.DWORD),
+        ("cntThreads", wintypes.DWORD),
+        ("th32ParentProcessID", wintypes.DWORD),
+        ("pcPriClassBase", wintypes.LONG),
+        ("dwFlags", wintypes.DWORD),
+        ("szExeFile", wintypes.WCHAR * _MAX_PATH),
+    )
+
+
+def iter_windows_process_names() -> tuple[str, ...]:
+    if os.name != "nt":  # pragma: no cover - the application is Windows-only
+        return ()
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    create_snapshot = kernel32.CreateToolhelp32Snapshot
+    create_snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
+    create_snapshot.restype = wintypes.HANDLE
+    process_first = kernel32.Process32FirstW
+    process_first.argtypes = (wintypes.HANDLE, ctypes.POINTER(_ProcessEntry32W))
+    process_first.restype = wintypes.BOOL
+    process_next = kernel32.Process32NextW
+    process_next.argtypes = (wintypes.HANDLE, ctypes.POINTER(_ProcessEntry32W))
+    process_next.restype = wintypes.BOOL
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = (wintypes.HANDLE,)
+    close_handle.restype = wintypes.BOOL
+
+    snapshot = create_snapshot(_TH32CS_SNAPPROCESS, 0)
+    if snapshot in (None, ctypes.c_void_p(-1).value):
+        return ()
+    names: list[str] = []
+    try:
+        entry = _ProcessEntry32W()
+        entry.dwSize = ctypes.sizeof(entry)
+        if not process_first(snapshot, ctypes.byref(entry)):
+            return ()
+        while True:
+            names.append(entry.szExeFile)
+            if not process_next(snapshot, ctypes.byref(entry)):
+                break
+    finally:
+        close_handle(snapshot)
+    return tuple(names)
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,10 +154,10 @@ class SteamService:
     def __init__(
         self,
         *,
-        run_process: Callable[..., Any] = subprocess.run,
+        process_names: Callable[[], tuple[str, ...]] = iter_windows_process_names,
         start_process: Callable[..., Any] = subprocess.Popen,
     ) -> None:
-        self._run_process = run_process
+        self._process_names = process_names
         self._start_process = start_process
 
     def detect_executable(self) -> Path | None:
@@ -138,16 +192,12 @@ class SteamService:
 
     def is_running(self) -> bool:
         try:
-            result = self._run_process(
-                ["tasklist", "/FI", "IMAGENAME eq steam.exe", "/FO", "CSV", "/NH"],
-                capture_output=True,
-                check=False,
-                text=True,
-                timeout=5,
+            return any(
+                name.casefold() == "steam.exe"
+                for name in self._process_names()
             )
-        except (OSError, subprocess.SubprocessError):
+        except OSError:
             return False
-        return '"steam.exe"' in (result.stdout or "").lower()
 
     def start(self, executable: Path | str, *, silently: bool) -> None:
         arguments = [str(executable)]

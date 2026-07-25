@@ -37,6 +37,7 @@ sct = [
 ]
 
 [dependency-groups]
+build = ["pyinstaller>=6.21,<7"]
 dev = ["ruff>=0.15.0"]
 
 [tool.ruff]

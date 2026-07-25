@@ -7,11 +7,18 @@ import zipfile
 from pathlib import Path
 
 from sct.items import (
+    REQUIRED_ITEM_FILES,
     ItemCatalog,
     ItemCategory,
     ItemDataNotFound,
     resolve_items_directory,
 )
+
+
+def write_required_item_files(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    for filename in REQUIRED_ITEM_FILES:
+        (root / filename).touch()
 
 
 def write_catalog(
@@ -33,9 +40,9 @@ class ItemDirectoryTests(unittest.TestCase):
             explicit = root / "explicit"
             executable = root / "app"
             development = root / "project"
-            explicit.mkdir()
-            (executable / "items").mkdir(parents=True)
-            (development / "data" / "items").mkdir(parents=True)
+            write_required_item_files(explicit)
+            write_required_item_files(executable / "items")
+            write_required_item_files(development / "data" / "items")
 
             resolved = resolve_items_directory(
                 explicit=explicit,
@@ -51,8 +58,8 @@ class ItemDirectoryTests(unittest.TestCase):
             executable = root / "app"
             development = root / "project"
             packaged = executable / "items"
-            packaged.mkdir(parents=True)
-            (development / "data" / "items").mkdir(parents=True)
+            write_required_item_files(packaged)
+            write_required_item_files(development / "data" / "items")
 
             resolved = resolve_items_directory(
                 executable_dir=executable,
@@ -73,6 +80,24 @@ class ItemDirectoryTests(unittest.TestCase):
 
             self.assertIn(str(root / "app" / "items"), str(raised.exception))
             self.assertIn(str(root / "project" / "data" / "items"), str(raised.exception))
+            self.assertEqual(raised.exception.missing_files, REQUIRED_ITEM_FILES)
+
+    def test_incomplete_item_directory_reports_each_missing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            packaged = root / "app" / "items"
+            packaged.mkdir(parents=True)
+            (packaged / "Weapons.csv").touch()
+
+            with self.assertRaises(ItemDataNotFound) as raised:
+                resolve_items_directory(
+                    executable_dir=root / "app",
+                    project_root=root / "project",
+                )
+
+            self.assertNotIn("Weapons.csv", raised.exception.missing_files)
+            self.assertIn("Ammunitions.csv", raised.exception.missing_files)
+            self.assertIn("images.zip", raised.exception.missing_files)
 
 
 class ItemCatalogTests(unittest.TestCase):

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import sys
 import unittest
 from datetime import UTC, datetime
 from types import MappingProxyType
+from unittest.mock import patch
 
 from PySide6.QtWidgets import QMessageBox
 
 from sct.game.cheats import Cheat
-from sct.game.players import PlayerSnapshot
+from sct.game.players import PlayerSnapshot, player_details_from_snapshot
 from sct.game.recent_players import RecentPlayerRecord
 from sct.game.runtime import GameSnapshot
+from sct.items import ItemDataNotFound
 from sct.localization import TranslationService
 from sct.ui.pages.current_game import CurrentGamePage
 from tests.qt_helpers import get_qapplication
@@ -151,6 +154,43 @@ class CurrentGamePageTests(unittest.TestCase):
             dialog.button(QMessageBox.StandardButton.No).text(),
             "Нет",
         )
+
+    def test_missing_item_data_blocks_player_details_and_lists_missing_files(
+        self,
+    ) -> None:
+        self.page._item_catalog = None
+        self.page._item_data_error = ItemDataNotFound(
+            "Item data is unavailable",
+            missing_files=("Weapons.csv", "images.zip"),
+        )
+        details = player_details_from_snapshot(
+            snapshot_player(0, "Local", local=True, runes=100)
+        )
+
+        self.page._open_details_dialog(details)
+
+        self.assertEqual(self.page._details_dialogs, [])
+        message = self.page._missing_items_dialog
+        self.assertIsNotNone(message)
+        self.assertIn("items.zip", message.text())
+        self.assertIn("Weapons.csv", message.text())
+        self.assertIn("images.zip", message.text())
+        message.close()
+
+    def test_frozen_item_warning_omits_development_directory(self) -> None:
+        self.page._item_catalog = None
+        self.page._item_data_error = ItemDataNotFound(
+            "Item data is unavailable",
+            missing_files=("Weapons.csv", "images.zip"),
+        )
+
+        with patch.object(sys, "frozen", True, create=True):
+            message = self.page._create_missing_item_data_message()
+
+        self.assertIn("items.zip", message.text())
+        self.assertIn("Weapons.csv", message.text())
+        self.assertNotIn("data/items", message.text())
+        message.close()
 
 
 if __name__ == "__main__":

@@ -65,12 +65,19 @@ class SteamTests(unittest.TestCase):
 
         self.assertEqual(detected, executable)
 
-    def test_status_check_matches_only_steam_process(self) -> None:
-        completed = Mock(stdout='"steam.exe","123","Console","1","50,000 K"\r\n')
-        runner = Mock(return_value=completed)
+    def test_status_check_matches_steam_from_in_process_enumeration(self) -> None:
+        service = SteamService(
+            process_names=lambda: ("System", "explorer.exe", "Steam.EXE")
+        )
 
-        self.assertTrue(SteamService(run_process=runner).is_running())
-        runner.assert_called_once()
+        self.assertTrue(service.is_running())
+
+    def test_status_check_does_not_match_similarly_named_process(self) -> None:
+        service = SteamService(
+            process_names=lambda: ("steamwebhelper.exe", "not-steam.exe")
+        )
+
+        self.assertFalse(service.is_running())
 
     def test_silent_start_and_game_launch_use_expected_process_arguments(self) -> None:
         popen = Mock()

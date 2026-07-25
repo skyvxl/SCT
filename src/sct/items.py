@@ -14,6 +14,17 @@ from types import MappingProxyType
 class ItemDataNotFound(FileNotFoundError):
     """Raised when no external Elden Ring item-data directory is available."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        missing_files: tuple[str, ...] = (),
+        checked_locations: tuple[Path, ...] = (),
+    ) -> None:
+        super().__init__(message)
+        self.missing_files = missing_files
+        self.checked_locations = checked_locations
+
 
 class ItemCategory(StrEnum):
     WEAPONS = "weapons"
@@ -46,6 +57,7 @@ CATALOG_FILES: Mapping[ItemCategory, str] = MappingProxyType(
         ItemCategory.GEMS: "Gems.csv",
     }
 )
+REQUIRED_ITEM_FILES = tuple(CATALOG_FILES.values()) + ("images.zip",)
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,13 +91,25 @@ def resolve_items_directory(
     candidates.append(root / "data" / "items")
 
     checked: list[Path] = []
+    closest_missing = REQUIRED_ITEM_FILES
     for candidate in candidates:
         resolved = candidate.resolve()
         checked.append(resolved)
-        if resolved.is_dir():
+        missing = tuple(
+            filename
+            for filename in REQUIRED_ITEM_FILES
+            if not (resolved / filename).is_file()
+        )
+        if not missing:
             return resolved
+        if len(missing) < len(closest_missing):
+            closest_missing = missing
     locations = ", ".join(str(path) for path in checked)
-    raise ItemDataNotFound(f"Elden Ring item data was not found. Checked: {locations}")
+    raise ItemDataNotFound(
+        f"Elden Ring item data was not found. Checked: {locations}",
+        missing_files=closest_missing,
+        checked_locations=tuple(checked),
+    )
 
 
 def _normalize(value: object) -> str:

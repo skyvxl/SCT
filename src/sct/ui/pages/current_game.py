@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 
 from PySide6.QtCore import QPoint, Qt, QThread, Signal, Slot
@@ -19,7 +20,12 @@ from sct.game.inventory import RemovalReport
 from sct.game.players import PlayerSnapshot, player_details_from_snapshot
 from sct.game.recent_players import RecentPlayerRecord
 from sct.game.runtime import EldenRingRuntime, GameSnapshot
-from sct.items import ItemCatalog, ItemDataNotFound, resolve_items_directory
+from sct.items import (
+    REQUIRED_ITEM_FILES,
+    ItemCatalog,
+    ItemDataNotFound,
+    resolve_items_directory,
+)
 from sct.localization import TranslationService
 from sct.ui.dialogs.cheats import CheatDialog
 from sct.ui.dialogs.player_details import PlayerDetailsDialog
@@ -55,13 +61,16 @@ class CurrentGamePage(LocalizedPage):
         self._cheat_dialog: CheatDialog | None = None
         self._details_dialogs: list[PlayerDetailsDialog] = []
         self._pending_build_dialog: PlayerDetailsDialog | None = None
+        self._missing_items_dialog: QMessageBox | None = None
+        self._item_data_error: ItemDataNotFound | None = None
         try:
             self._item_catalog: ItemCatalog | None = ItemCatalog(
                 resolve_items_directory(),
                 locale=translator.locale,
             )
-        except ItemDataNotFound:
+        except ItemDataNotFound as error:
             self._item_catalog = None
+            self._item_data_error = error
         self._shutdown = False
         self._worker_thread: QThread | None = None
         self.worker = CurrentGameWorker(runtime)
@@ -332,6 +341,9 @@ class CurrentGamePage(LocalizedPage):
 
     @Slot(object)
     def _open_details_dialog(self, details: PlayerDetails) -> None:
+        if self._item_catalog is None:
+            self._show_missing_item_data_message()
+            return
         dialog = PlayerDetailsDialog(
             self.translator,
             details,
@@ -351,6 +363,50 @@ class CurrentGamePage(LocalizedPage):
         )
         self._details_dialogs.append(dialog)
         dialog.show()
+
+    def _show_missing_item_data_message(self) -> None:
+        if self._missing_items_dialog is not None:
+            self._missing_items_dialog.raise_()
+            self._missing_items_dialog.activateWindow()
+            return
+        dialog = self._create_missing_item_data_message()
+        dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dialog.destroyed.connect(
+            lambda _object=None: self._clear_missing_item_data_message()
+        )
+        self._missing_items_dialog = dialog
+        dialog.show()
+
+    def _create_missing_item_data_message(self) -> QMessageBox:
+        missing_files = (
+            self._item_data_error.missing_files
+            if self._item_data_error is not None
+            else REQUIRED_ITEM_FILES
+        )
+        file_list = "\n".join(f"• {filename}" for filename in missing_files)
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setWindowTitle(
+            self.translator.translate("player_details.item_data_missing_title")
+        )
+        dialog.setText(
+            self.translator.translate(
+                (
+                    "player_details.item_data_missing"
+                    if getattr(sys, "frozen", False)
+                    else "player_details.item_data_missing_development"
+                ),
+                files=file_list,
+            )
+        )
+        dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+        dialog.button(QMessageBox.StandardButton.Ok).setText(
+            self.translator.translate("common.ok")
+        )
+        return dialog
+
+    def _clear_missing_item_data_message(self) -> None:
+        self._missing_items_dialog = None
 
     def _forget_details_dialog(self, dialog: PlayerDetailsDialog) -> None:
         if dialog in self._details_dialogs:

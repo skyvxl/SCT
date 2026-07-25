@@ -2,15 +2,13 @@
 
 A Windows desktop toolkit for Elden Ring Seamless Co-op, rebuilt with PySide6.
 
-The current development milestone reconstructs the application interface. Game
-launching, save management, memory editing, backups, and updates are not active
-yet.
+The project is under active development. Game installation and launching, Seamless Co-op settings, current game tools,
+cheats, and build editing are available. Save backups and character management are still being rebuilt.
 
 ## User interface
 
-The screenshots below show what the program looks like now. I restored this
-interface using old versions of Seamless Co-op Mod Manager (SCMM) by **2Pz** as
-a reference. Some parts may change during development.
+The screenshots below show what the program looks like now. I restored this interface using old versions of Seamless
+Co-op Mod Manager (SCMM) by **2Pz** as a reference. Some parts may change during development.
 
 ### Main screen
 
@@ -51,6 +49,19 @@ uv sync --dev
 uv run sct
 uv run python -m unittest discover -s tests -v
 ```
+
+## Windows build
+
+The release build needs the item files in `data/items` and a valid
+`ERSC_RELEASE_API_URL` in `.env`.
+
+```powershell
+uv sync --group build
+uv run python tools/build_release.py
+```
+
+The portable program folder, program ZIP, and separate `items.zip` are created in `dist`. Extract `items.zip` next to
+the program so the `items` folder is beside `Seamless Co-op Toolkit.exe`.
 
 ## Credits
 

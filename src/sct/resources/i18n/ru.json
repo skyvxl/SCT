@@ -138,7 +138,9 @@
     "error_title": "Ошибка сборки",
     "success_title": "Успех",
     "success_message": "Сборка успешно применена!",
-    "item_data_missing": "Каталог предметов не установлен. Поместите CSV-файлы и images.zip в папку items рядом с приложением.",
+    "item_data_missing_title": "Не установлены данные предметов",
+    "item_data_missing": "Скачайте items.zip и распакуйте его рядом с Seamless Co-op Toolkit.exe.\n\nОтсутствуют файлы:\n{files}",
+    "item_data_missing_development": "Скачайте items.zip и распакуйте его рядом с Seamless Co-op Toolkit.exe. В режиме разработки файлы должны находиться в data/items.\n\nОтсутствуют файлы:\n{files}",
     "sections": {
       "shadow": "Shadow of the Erdtree",
       "player_info": "Информация об игроке",
