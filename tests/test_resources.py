@@ -37,7 +37,7 @@ class ResourceTests(unittest.TestCase):
     def test_log_path_uses_local_app_data(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(os.environ, {"LOCALAPPDATA": directory}):
-                expected = Path(directory) / "SeamlessCoopModManager" / "logs" / "sct.log"
+                expected = Path(directory) / "SeamlessCoopToolkit" / "logs" / "sct.log"
                 self.assertEqual(log_file_path(), expected)
 
     def test_missing_stylesheet_falls_back_to_empty_qss(self) -> None:

@@ -4,13 +4,15 @@ import logging
 import os
 from pathlib import Path
 
+from sct.settings import DIRECTORY_NAME
+
 LOGGER_NAME = "sct"
 
 
 def log_file_path() -> Path:
     local_app_data = os.environ.get("LOCALAPPDATA")
     base = Path(local_app_data) if local_app_data else Path.home() / "AppData" / "Local"
-    return base / "SeamlessCoopModManager" / "logs" / "sct.log"
+    return base / DIRECTORY_NAME / "logs" / "sct.log"
 
 
 def configure_logging() -> Path | None:

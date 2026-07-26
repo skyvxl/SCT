@@ -39,6 +39,10 @@ def build_page_specs(
             CurrentGamePage(translator, game_runtime),
         ),
         PageSpec("nav.backups", "backup.png", backups_page),
-        PageSpec("nav.characters", "character.png", CharactersPage(translator)),
+        PageSpec(
+            "nav.characters",
+            "character.png",
+            CharactersPage(translator, settings_store),
+        ),
         PageSpec("nav.settings", "settings.png", settings_page),
     )

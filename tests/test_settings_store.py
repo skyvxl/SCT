@@ -16,12 +16,12 @@ class SettingsStoreTests(unittest.TestCase):
 
         self.assertEqual(
             path,
-            Path(r"C:\Users\Test\AppData\Roaming") / "SeamlessCoopModManager" / "settings.ini",
+            Path(r"C:\Users\Test\AppData\Roaming") / "SeamlessCoopToolkit" / "settings.ini",
         )
 
     def test_ensure_exists_creates_complete_default_file(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "SeamlessCoopModManager" / "settings.ini"
+            path = Path(directory) / "SeamlessCoopToolkit" / "settings.ini"
             store = SettingsStore(path)
 
             settings = store.ensure_exists()

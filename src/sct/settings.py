@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 SECTION = "Settings"
-DIRECTORY_NAME = "SeamlessCoopModManager"
+DIRECTORY_NAME = "SeamlessCoopToolkit"
 
 
 @dataclass(frozen=True, slots=True)
