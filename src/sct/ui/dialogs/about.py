@@ -17,9 +17,9 @@ from sct.version import DISPLAY_VERSION
 
 class AboutDialog(QDialog):
     def __init__(
-        self,
-        translator: TranslationService,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator

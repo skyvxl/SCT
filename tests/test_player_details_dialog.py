@@ -86,7 +86,7 @@ class PlayerDetailsDialogTests(unittest.TestCase):
         self.assertEqual(dialog.current_build().source_name, "Phantom")
 
     def test_apply_button_is_visible_only_while_build_differs_from_opened_state(
-        self,
+            self,
     ) -> None:
         dialog = PlayerDetailsDialog(self.translator, details(local=True))
         original_vigor = dialog.stats_inputs["vigor"].value()
@@ -111,7 +111,7 @@ class PlayerDetailsDialogTests(unittest.TestCase):
         self.assertFalse(dialog.apply_button.isHidden())
 
     def test_apply_writes_manual_stats_when_equipment_only_load_is_enabled(
-        self,
+            self,
     ) -> None:
         dialog = PlayerDetailsDialog(self.translator, details(local=True))
         requested: list[tuple[object, bool]] = []

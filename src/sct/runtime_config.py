@@ -51,10 +51,10 @@ class RuntimeConfig:
 
     @classmethod
     def load(
-        cls,
-        *,
-        environment: Mapping[str, str] | None = None,
-        search_paths: Sequence[Path] | None = None,
+            cls,
+            *,
+            environment: Mapping[str, str] | None = None,
+            search_paths: Sequence[Path] | None = None,
     ) -> RuntimeConfig:
         environment_values = os.environ if environment is None else environment
         release_url = environment_values.get(ERSC_RELEASE_API_URL, "").strip()

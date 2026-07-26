@@ -17,12 +17,12 @@ from sct.game.recent_players import (
 
 
 def player(
-    player_num: int,
-    name: str,
-    level: int,
-    *,
-    steam_id: str | None = None,
-    local: bool = False,
+        player_num: int,
+        name: str,
+        level: int,
+        *,
+        steam_id: str | None = None,
+        local: bool = False,
 ) -> PlayerSnapshot:
     return PlayerSnapshot(
         player_num=player_num,

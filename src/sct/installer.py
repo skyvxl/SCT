@@ -147,22 +147,22 @@ class FileTransaction:
 
 class ModInstaller:
     def __init__(
-        self,
-        config: RuntimeConfig,
-        *,
-        release_client: GitHubReleaseClient | None = None,
-        modengine_url: str = MODENGINE2_URL,
+            self,
+            config: RuntimeConfig,
+            *,
+            release_client: GitHubReleaseClient | None = None,
+            modengine_url: str = MODENGINE2_URL,
     ) -> None:
         self.config = config
         self.release_client = release_client or GitHubReleaseClient()
         self.modengine_url = modengine_url
 
     def install(
-        self,
-        game_directory: Path | str,
-        password: str,
-        *,
-        progress: ProgressCallback | None = None,
+            self,
+            game_directory: Path | str,
+            password: str,
+            *,
+            progress: ProgressCallback | None = None,
     ) -> InstallResult:
         game = Path(game_directory).expanduser().resolve()
         if not (game / "eldenring.exe").is_file():
@@ -283,10 +283,10 @@ class ModInstaller:
 
     @staticmethod
     def _download_progress(
-        emit: ProgressCallback,
-        phase: str,
-        base: int,
-        span: int,
+            emit: ProgressCallback,
+            phase: str,
+            base: int,
+            span: int,
     ) -> Callable[[int, int | None], None]:
         def report(received: int, total: int | None) -> None:
             completed = int((received / total) * span) if total else 0

@@ -33,11 +33,11 @@ class ResolverProtocol(Protocol):
 
 class ScannerProtocol(Protocol):
     def scan_module_unique(
-        self,
-        module: Any,
-        pattern: str,
-        *,
-        symbol: str,
+            self,
+            module: Any,
+            pattern: str,
+            *,
+            symbol: str,
     ) -> int: ...
 
 
@@ -57,14 +57,14 @@ def _offset(mapping: Mapping[str, Any], *keys: str) -> int:
 
 class EldenRingCheatRuntime:
     def __init__(
-        self,
-        memory_factory: MemoryFactory,
-        resolver_factory: ResolverFactory,
-        *,
-        scanner_factory: ScannerFactory = AOBScanner,
-        offsets: Mapping[str, Any] | None = None,
-        start_background: bool = True,
-        interval: float = 0.1,
+            self,
+            memory_factory: MemoryFactory,
+            resolver_factory: ResolverFactory,
+            *,
+            scanner_factory: ScannerFactory = AOBScanner,
+            offsets: Mapping[str, Any] | None = None,
+            start_background: bool = True,
+            interval: float = 0.1,
     ) -> None:
         self._memory_factory = memory_factory
         self._resolver_factory = resolver_factory
@@ -192,11 +192,11 @@ class EldenRingCheatRuntime:
         memory.write_bytes(address, NO_WEIGHT_FALLBACK_ORIGINAL)
 
     def _write_state(
-        self,
-        memory: MemoryClientProtocol,
-        resolver: ResolverProtocol,
-        cheat: Cheat,
-        enabled: bool,
+            self,
+            memory: MemoryClientProtocol,
+            resolver: ResolverProtocol,
+            cheat: Cheat,
+            enabled: bool,
     ) -> None:
         world_pointer = resolver.resolve("WorldChrManPtrAddr").address
         world = memory.read_ptr(world_pointer)
@@ -239,10 +239,10 @@ class EldenRingCheatRuntime:
 
     @staticmethod
     def _set_bit(
-        memory: MemoryClientProtocol,
-        address: int,
-        bit: int,
-        enabled: bool,
+            memory: MemoryClientProtocol,
+            address: int,
+            bit: int,
+            enabled: bool,
     ) -> None:
         current = memory.read_u8(address)
         updated = current | (1 << bit) if enabled else current & ~(1 << bit)

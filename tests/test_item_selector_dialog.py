@@ -22,9 +22,9 @@ class ItemSelectorDialogTests(unittest.TestCase):
         self.temporary_directory = tempfile.TemporaryDirectory()
         root = Path(self.temporary_directory.name)
         with (root / "Weapons.csv").open(
-            "w",
-            encoding="utf-8-sig",
-            newline="",
+                "w",
+                encoding="utf-8-sig",
+                newline="",
         ) as stream:
             writer = csv.DictWriter(
                 stream,

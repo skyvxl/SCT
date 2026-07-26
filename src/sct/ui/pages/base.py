@@ -28,11 +28,11 @@ class LocalizedPage(QWidget):
         return tuple(binding.key for binding in self._bindings)
 
     def bind(
-        self,
-        setter: Callable[[str], None],
-        key: str,
-        *args: object,
-        **kwargs: object,
+            self,
+            setter: Callable[[str], None],
+            key: str,
+            *args: object,
+            **kwargs: object,
     ) -> None:
         binding = TextBinding(setter, key, args, kwargs)
         self._bindings.append(binding)

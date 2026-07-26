@@ -35,14 +35,14 @@ AutoSetupFactory = Callable[
 
 class MainWindow(QMainWindow):
     def __init__(
-        self,
-        translator: TranslationService,
-        pages: Sequence[PageSpec],
-        settings_store: SettingsStore,
-        installer_factory: InstallerFactory,
-        *,
-        about_factory: AboutFactory = AboutDialog,
-        auto_setup_factory: AutoSetupFactory = AutoSetupDialog,
+            self,
+            translator: TranslationService,
+            pages: Sequence[PageSpec],
+            settings_store: SettingsStore,
+            installer_factory: InstallerFactory,
+            *,
+            about_factory: AboutFactory = AboutDialog,
+            auto_setup_factory: AutoSetupFactory = AutoSetupDialog,
     ) -> None:
         super().__init__()
         if len(pages) != 6:
@@ -67,10 +67,10 @@ class MainWindow(QMainWindow):
         self.help_menu.setObjectName("helpMenu")
         self.menuBar().addMenu(self.help_menu)
         for key in (
-            "menu.auto_setup",
-            "menu.check_manager_updates",
-            "menu.check_mod_updates",
-            "menu.about",
+                "menu.auto_setup",
+                "menu.check_manager_updates",
+                "menu.check_mod_updates",
+                "menu.about",
         ):
             action = QAction(self)
             action.setProperty("translationKey", key)
@@ -149,8 +149,8 @@ class MainWindow(QMainWindow):
         )
         settings_page = self._pages[-1].widget
         if hasattr(dialog, "installation_completed") and hasattr(
-            settings_page,
-            "handle_installation_completed",
+                settings_page,
+                "handle_installation_completed",
         ):
             dialog.installation_completed.connect(
                 settings_page.handle_installation_completed

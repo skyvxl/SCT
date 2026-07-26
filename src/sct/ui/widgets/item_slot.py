@@ -21,16 +21,16 @@ class ItemSlotWidget(QFrame):
     value_changed = Signal(str, object)
 
     def __init__(
-        self,
-        translator: TranslationService,
-        slot_name: str,
-        label_key: str,
-        category: ItemCategory,
-        value: EquipmentValue,
-        *,
-        catalog: ItemCatalog | None,
-        editable: bool,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            slot_name: str,
+            label_key: str,
+            category: ItemCategory,
+            value: EquipmentValue,
+            *,
+            catalog: ItemCatalog | None,
+            editable: bool,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator

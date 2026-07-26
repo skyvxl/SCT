@@ -6,12 +6,14 @@ from collections.abc import Sequence
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
+from sct.backup_manager import BackupManager, build_backup_manager
 from sct.game.runtime import EldenRingRuntime, build_elden_ring_runtime
 from sct.installer import ModInstaller
 from sct.localization import TranslationCatalogError, TranslationService
 from sct.logging_config import configure_logging
 from sct.resource_loader import load_stylesheet
 from sct.runtime_config import RuntimeConfig
+from sct.screenshots import GameWindowCapture
 from sct.settings import SettingsStore
 from sct.steam import SteamService
 from sct.ui.main_window import MainWindow
@@ -31,18 +33,37 @@ def get_application(arguments: Sequence[str] | None = None) -> QApplication:
 
 
 def build_main_window(
-    translator: TranslationService,
-    settings_store: SettingsStore,
-    steam_service: SteamService,
-    game_runtime: EldenRingRuntime | None = None,
+        translator: TranslationService,
+        settings_store: SettingsStore,
+        steam_service: SteamService,
+        game_runtime: EldenRingRuntime | None = None,
+        backup_manager: BackupManager | None = None,
 ) -> MainWindow:
     runtime = game_runtime or build_elden_ring_runtime(settings_store.path)
-    return MainWindow(
+    screenshot_capture: GameWindowCapture | None = None
+    if backup_manager is None:
+        screenshot_capture = GameWindowCapture()
+        backups = build_backup_manager(
+            settings_store,
+            screenshot_provider=screenshot_capture.capture,
+        )
+    else:
+        backups = backup_manager
+    window = MainWindow(
         translator,
-        build_page_specs(translator, settings_store, steam_service, runtime),
+        build_page_specs(
+            translator,
+            settings_store,
+            steam_service,
+            runtime,
+            backups,
+        ),
         settings_store,
         lambda: ModInstaller(RuntimeConfig.load()),
     )
+    if screenshot_capture is not None:
+        screenshot_capture.setParent(window)
+    return window
 
 
 def main(arguments: Sequence[str] | None = None) -> int:

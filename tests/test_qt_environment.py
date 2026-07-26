@@ -14,8 +14,8 @@ from tests.qt_helpers import get_qapplication
 class QtEnvironmentTests(unittest.TestCase):
     def test_offscreen_platform_uses_installed_windows_fonts(self) -> None:
         with patch.dict(
-            os.environ,
-            {"QT_QPA_PLATFORM": "offscreen", "WINDIR": r"C:\Windows"},
+                os.environ,
+                {"QT_QPA_PLATFORM": "offscreen", "WINDIR": r"C:\Windows"},
         ):
             os.environ.pop("QT_QPA_FONTDIR", None)
             configure_qt_environment()

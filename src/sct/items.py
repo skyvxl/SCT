@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import csv
 import sys
-import unicodedata
 import zipfile
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -10,16 +9,18 @@ from enum import StrEnum
 from pathlib import Path
 from types import MappingProxyType
 
+import unicodedata
+
 
 class ItemDataNotFound(FileNotFoundError):
     """Raised when no external Elden Ring item-data directory is available."""
 
     def __init__(
-        self,
-        message: str,
-        *,
-        missing_files: tuple[str, ...] = (),
-        checked_locations: tuple[Path, ...] = (),
+            self,
+            message: str,
+            *,
+            missing_files: tuple[str, ...] = (),
+            checked_locations: tuple[Path, ...] = (),
     ) -> None:
         super().__init__(message)
         self.missing_files = missing_files
@@ -71,10 +72,10 @@ class ItemRecord:
 
 
 def resolve_items_directory(
-    *,
-    explicit: Path | str | None = None,
-    executable_dir: Path | str | None = None,
-    project_root: Path | str | None = None,
+        *,
+        explicit: Path | str | None = None,
+        executable_dir: Path | str | None = None,
+        project_root: Path | str | None = None,
 ) -> Path:
     candidates: list[Path] = []
     if explicit is not None:
@@ -159,11 +160,11 @@ class ItemCatalog:
         return self._by_id[category].get(int(item_id))
 
     def search(
-        self,
-        category: ItemCategory,
-        query: str = "",
-        *,
-        limit: int | None = None,
+            self,
+            category: ItemCategory,
+            query: str = "",
+            *,
+            limit: int | None = None,
     ) -> tuple[ItemRecord, ...]:
         normalized = _normalize(query)
         values = self.items(category)

@@ -23,13 +23,13 @@ class UnsafeArchiveError(LocalizedError):
 
 
 def download_file(
-    url: str,
-    destination: Path | str,
-    *,
-    expected_digest: str | None = None,
-    expected_size: int | None = None,
-    progress: ProgressCallback | None = None,
-    chunk_size: int = 1024 * 256,
+        url: str,
+        destination: Path | str,
+        *,
+        expected_digest: str | None = None,
+        expected_size: int | None = None,
+        progress: ProgressCallback | None = None,
+        chunk_size: int = 1024 * 256,
 ) -> Path:
     target = Path(destination)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -77,11 +77,11 @@ def _validated_member_path(info: zipfile.ZipInfo) -> PurePosixPath:
     posix_path = PurePosixPath(normalized_name)
     windows_path = PureWindowsPath(info.filename)
     if (
-        not normalized_name
-        or posix_path.is_absolute()
-        or windows_path.is_absolute()
-        or bool(windows_path.drive)
-        or ".." in posix_path.parts
+            not normalized_name
+            or posix_path.is_absolute()
+            or windows_path.is_absolute()
+            or bool(windows_path.drive)
+            or ".." in posix_path.parts
     ):
         raise UnsafeArchiveError(
             "archive_path_unsafe",

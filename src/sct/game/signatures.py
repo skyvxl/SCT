@@ -40,11 +40,11 @@ class AOBScanner:
         self._memory = memory
 
     def scan_module(
-        self,
-        module: ModuleInfo,
-        pattern: str,
-        *,
-        symbol: str,
+            self,
+            module: ModuleInfo,
+            pattern: str,
+            *,
+            symbol: str,
     ) -> tuple[AobMatch, ...]:
         regex = compile_aob_regex(pattern)
         pattern_length = len(_parse_aob(pattern))
@@ -127,11 +127,11 @@ class ResolvedSymbol:
 
 class SymbolResolver:
     def __init__(
-        self,
-        memory: MemoryClientProtocol,
-        signature_path: Path | str,
-        *,
-        default_module: str,
+            self,
+            memory: MemoryClientProtocol,
+            signature_path: Path | str,
+            *,
+            default_module: str,
     ) -> None:
         self._memory = memory
         self._scanner = AOBScanner(memory)

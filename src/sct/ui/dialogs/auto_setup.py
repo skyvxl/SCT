@@ -61,11 +61,11 @@ class AutoSetupDialog(QDialog):
     installation_completed = Signal(object)
 
     def __init__(
-        self,
-        translator: TranslationService,
-        settings_store: SettingsStore,
-        installer_factory: InstallerFactory,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            settings_store: SettingsStore,
+            installer_factory: InstallerFactory,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator

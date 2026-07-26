@@ -32,13 +32,13 @@ CHEAT_TRANSLATION_KEYS = {
 
 class CheatDialog(QDialog):
     def __init__(
-        self,
-        translator: TranslationService,
-        enabled_cheats: frozenset[Cheat],
-        on_toggle: ToggleCallback,
-        parent: QWidget | None = None,
-        *,
-        on_remove_items: Callable[[], None] | None = None,
+            self,
+            translator: TranslationService,
+            enabled_cheats: frozenset[Cheat],
+            on_toggle: ToggleCallback,
+            parent: QWidget | None = None,
+            *,
+            on_remove_items: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator

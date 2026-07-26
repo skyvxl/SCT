@@ -93,13 +93,13 @@ class SettingsStore:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                "w",
-                encoding="utf-8",
-                newline="\n",
-                delete=False,
-                dir=self.path.parent,
-                prefix=f".{self.path.name}.",
-                suffix=".tmp",
+                    "w",
+                    encoding="utf-8",
+                    newline="\n",
+                    delete=False,
+                    dir=self.path.parent,
+                    prefix=f".{self.path.name}.",
+                    suffix=".tmp",
             ) as temporary:
                 parser.write(temporary)
                 temporary.flush()

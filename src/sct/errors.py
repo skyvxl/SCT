@@ -9,11 +9,11 @@ if TYPE_CHECKING:
 
 class LocalizedError(RuntimeError):
     def __init__(
-        self,
-        code: str,
-        debug_message: str,
-        *,
-        params: Mapping[str, object] | None = None,
+            self,
+            code: str,
+            debug_message: str,
+            *,
+            params: Mapping[str, object] | None = None,
     ) -> None:
         super().__init__(debug_message)
         self.code = code
@@ -21,10 +21,10 @@ class LocalizedError(RuntimeError):
 
 
 def localized_error_message(
-    translator: TranslationService,
-    error: BaseException,
-    *,
-    fallback_key: str = "errors.unexpected",
+        translator: TranslationService,
+        error: BaseException,
+        *,
+        fallback_key: str = "errors.unexpected",
 ) -> str:
     if isinstance(error, LocalizedError):
         return translator.translate(f"errors.{error.code}", **error.params)

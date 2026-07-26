@@ -45,10 +45,10 @@ class FakeRuntime:
         return self.removal_report
 
     def apply_build(
-        self,
-        build: SavedBuild,
-        *,
-        equipment_only: bool = False,
+            self,
+            build: SavedBuild,
+            *,
+            equipment_only: bool = False,
     ) -> GameSnapshot:
         self.applied_builds.append((build, equipment_only))
         return GameSnapshot((), ())

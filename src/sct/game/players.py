@@ -50,10 +50,10 @@ class PlayerSnapshot:
 
 class EldenRingPlayerService:
     def __init__(
-        self,
-        memory: MemoryClientProtocol,
-        resolver: ResolverProtocol,
-        offsets: Mapping[str, Any] | None = None,
+            self,
+            memory: MemoryClientProtocol,
+            resolver: ResolverProtocol,
+            offsets: Mapping[str, Any] | None = None,
     ) -> None:
         self._memory = memory
         self._resolver = resolver
@@ -240,8 +240,8 @@ class EldenRingPlayerService:
         if not player_data:
             return
         for name, address in (
-            ("physick_tear_1", player_data + 0x694),
-            ("physick_tear_2", player_data + 0x698),
+                ("physick_tear_1", player_data + 0x694),
+                ("physick_tear_2", player_data + 0x698),
         ):
             value = self._memory.read_u32(address)
             equipment[name] = -1 if value == 0xFFFFFFFF else value & 0x0FFFFFFF
@@ -255,7 +255,7 @@ class EldenRingPlayerService:
 
     @staticmethod
     def _normalize_equipment(
-        equipment: Mapping[str, int],
+            equipment: Mapping[str, int],
     ) -> dict[str, EquipmentItem | None]:
         normalized: dict[str, EquipmentItem | None] = {}
         for slot, raw_value in equipment.items():

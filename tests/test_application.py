@@ -45,10 +45,10 @@ class ApplicationTests(unittest.TestCase):
         side_effect=TranslationCatalogError("broken ru.json"),
     )
     def test_catalog_failure_returns_nonzero_before_event_loop(
-        self,
-        _translator: object,
-        critical: object,
-        _logging: object,
+            self,
+            _translator: object,
+            critical: object,
+            _logging: object,
     ) -> None:
         with self.assertLogs("sct.application", level="ERROR") as logs:
             result = main([])
@@ -62,11 +62,11 @@ class ApplicationTests(unittest.TestCase):
     @patch("sct.application.SettingsStore")
     @patch("sct.application.build_main_window", side_effect=RuntimeError("broken window"))
     def test_unhandled_startup_failure_is_reported_without_event_loop(
-        self,
-        _window: object,
-        _settings_store: object,
-        critical: object,
-        _logging: object,
+            self,
+            _window: object,
+            _settings_store: object,
+            critical: object,
+            _logging: object,
     ) -> None:
         with self.assertLogs("sct.application", level="ERROR") as logs:
             result = main([])

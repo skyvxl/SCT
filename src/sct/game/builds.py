@@ -42,13 +42,13 @@ SPELL_SLOTS = tuple(f"magic_slot_{slot}" for slot in range(14))
 QUICK_ITEM_SLOTS = tuple(f"quick_item_{slot}" for slot in range(1, 11))
 PHYSICK_SLOTS = ("physick_tear_1", "physick_tear_2")
 ALL_EQUIPMENT_SLOTS = (
-    WEAPON_SLOTS
-    + AMMUNITION_SLOTS
-    + ARMOR_SLOTS
-    + TALISMAN_SLOTS
-    + SPELL_SLOTS
-    + QUICK_ITEM_SLOTS
-    + PHYSICK_SLOTS
+        WEAPON_SLOTS
+        + AMMUNITION_SLOTS
+        + ARMOR_SLOTS
+        + TALISMAN_SLOTS
+        + SPELL_SLOTS
+        + QUICK_ITEM_SLOTS
+        + PHYSICK_SLOTS
 )
 
 
@@ -171,7 +171,7 @@ class SavedBuild:
         stats_payload = payload.get("stats", {})
         equipment_payload = payload.get("equipment", {})
         if not isinstance(stats_payload, Mapping) or not isinstance(
-            equipment_payload, Mapping
+                equipment_payload, Mapping
         ):
             raise ValueError("Build stats and equipment must be objects")
         equipment: dict[str, EquipmentValue] = {}

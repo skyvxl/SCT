@@ -22,10 +22,10 @@ class CurrentGameRuntimeProtocol(Protocol):
     def remove_seamless_items(self) -> RemovalReport: ...
 
     def apply_build(
-        self,
-        build: SavedBuild,
-        *,
-        equipment_only: bool = False,
+            self,
+            build: SavedBuild,
+            *,
+            equipment_only: bool = False,
     ) -> GameSnapshot: ...
 
     def close(self) -> None: ...
@@ -41,11 +41,11 @@ class CurrentGameWorker(QObject):
     shutdown_finished = Signal()
 
     def __init__(
-        self,
-        runtime: CurrentGameRuntimeProtocol,
-        *,
-        interval_ms: int = 5000,
-        parent: QObject | None = None,
+            self,
+            runtime: CurrentGameRuntimeProtocol,
+            *,
+            interval_ms: int = 5000,
+            parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.runtime = runtime

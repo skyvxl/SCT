@@ -62,13 +62,13 @@ class RecentPlayerStore:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                "w",
-                encoding="utf-8",
-                newline="\n",
-                delete=False,
-                dir=self.path.parent,
-                prefix=f".{self.path.name}.",
-                suffix=".tmp",
+                    "w",
+                    encoding="utf-8",
+                    newline="\n",
+                    delete=False,
+                    dir=self.path.parent,
+                    prefix=f".{self.path.name}.",
+                    suffix=".tmp",
             ) as temporary:
                 json.dump(payload, temporary, ensure_ascii=False, indent=2)
                 temporary.write("\n")
@@ -144,11 +144,11 @@ class RecentPlayerStore:
 
 class SessionRosterTracker:
     def __init__(
-        self,
-        store: RecentStoreProtocol,
-        *,
-        now: Callable[[], datetime] | None = None,
-        limit: int = 50,
+            self,
+            store: RecentStoreProtocol,
+            *,
+            now: Callable[[], datetime] | None = None,
+            limit: int = 50,
     ) -> None:
         self._store = store
         self._now = now or (lambda: datetime.now(UTC))
@@ -161,9 +161,9 @@ class SessionRosterTracker:
         return self._history
 
     def observe(
-        self,
-        current: Sequence[PlayerSnapshot],
-        details: dict[str, PlayerDetails] | None = None,
+            self,
+            current: Sequence[PlayerSnapshot],
+            details: dict[str, PlayerDetails] | None = None,
     ) -> tuple[RecentPlayerRecord, ...]:
         live = {
             player.player_num: player

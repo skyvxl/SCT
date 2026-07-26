@@ -28,7 +28,7 @@ include = ["sct*"]
 
 [tool.setuptools.package-data]
 sct = [
-    "resources/*.wav",
+    "resources/audios/*.wav",
     "resources/flags/*.png",
     "resources/icons/*",
     "resources/i18n/*.json",

@@ -122,7 +122,7 @@ def _require_pointer(value: int, label: str) -> int:
 
 
 def _target_signature(
-    hits: Sequence[InventoryHit],
+        hits: Sequence[InventoryHit],
 ) -> tuple[tuple[int, int, int], ...]:
     return tuple(
         sorted((int(hit.kind), hit.packed_id, hit.quantity) for hit in hits)
@@ -131,21 +131,21 @@ def _target_signature(
 
 class SeamlessInventoryCleaner:
     def __init__(
-        self,
-        *,
-        memory: InventoryMemoryProtocol,
-        invoke: GameFunctionCaller | None = None,
-        layouts: Mapping[InventoryKind, InventoryLayout] = DEFAULT_LAYOUTS,
+            self,
+            *,
+            memory: InventoryMemoryProtocol,
+            invoke: GameFunctionCaller | None = None,
+            layouts: Mapping[InventoryKind, InventoryLayout] = DEFAULT_LAYOUTS,
     ) -> None:
         self._memory = memory
         self._invoke = invoke
         self._layouts = dict(layouts)
 
     def scan(
-        self,
-        game_data_man: int,
-        *,
-        include_storage: bool = False,
+            self,
+            game_data_man: int,
+            *,
+            include_storage: bool = False,
     ) -> tuple[InventoryHit, ...]:
         game_data_man = _require_pointer(game_data_man, "GameDataMan")
         player_game_data = _require_pointer(
@@ -166,12 +166,12 @@ class SeamlessInventoryCleaner:
         return tuple(hits)
 
     def remove_all(
-        self,
-        *,
-        game_data_man: int,
-        remove_item_function: int,
-        include_storage: bool = False,
-        max_calls: int = 64,
+            self,
+            *,
+            game_data_man: int,
+            remove_item_function: int,
+            include_storage: bool = False,
+            max_calls: int = 64,
     ) -> RemovalReport:
         if max_calls <= 0:
             raise ValueError("max_calls must be greater than zero")
@@ -208,9 +208,9 @@ class SeamlessInventoryCleaner:
         return RemovalReport(initial, tuple(attempts), current)
 
     def _scan_bank(
-        self,
-        player_game_data: int,
-        kind: InventoryKind,
+            self,
+            player_game_data: int,
+            kind: InventoryKind,
     ) -> list[InventoryHit]:
         layout = self._layouts[kind]
         equip = _require_pointer(
@@ -268,10 +268,10 @@ class SeamlessInventoryCleaner:
         return hits
 
     def _preflight(
-        self,
-        hits: Sequence[InventoryHit],
-        *,
-        max_calls: int,
+            self,
+            hits: Sequence[InventoryHit],
+            *,
+            max_calls: int,
     ) -> None:
         required_calls = 0
         for hit in hits:
@@ -316,10 +316,10 @@ def _u64(value: int, label: str) -> int:
 
 
 def build_win64_call3_stub(
-    function_address: int,
-    rcx: int,
-    rdx: int,
-    r8: int,
+        function_address: int,
+        rcx: int,
+        rdx: int,
+        r8: int,
 ) -> bytes:
     function_address = _u64(function_address, "function_address")
     rcx = _u64(rcx, "rcx")
@@ -361,11 +361,11 @@ class EldenRingInventoryService:
         )
 
     def _call_three_arguments(
-        self,
-        function_address: int,
-        rcx: int,
-        rdx: int,
-        r8: int,
+            self,
+            function_address: int,
+            rcx: int,
+            rdx: int,
+            r8: int,
     ) -> int:
         shellcode = build_win64_call3_stub(function_address, rcx, rdx, r8)
         remote = self._memory.allocate(len(shellcode))

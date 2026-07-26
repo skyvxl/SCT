@@ -19,7 +19,7 @@ class FakeMemory:
 
     def read_bytes(self, address: int, size: int) -> bytes:
         start = address - self.base
-        return self.data[start : start + size]
+        return self.data[start: start + size]
 
     def read_i32(self, address: int) -> int:
         return int.from_bytes(self.read_bytes(address, 4), "little", signed=True)
@@ -58,10 +58,10 @@ class SignatureTests(unittest.TestCase):
         rip_base = instruction + 7
         relative = target - rip_base
         data = (
-            b"\x90\x90"
-            + b"\x48\x8B\x05"
-            + relative.to_bytes(4, "little", signed=True)
-            + b"\x90\x90"
+                b"\x90\x90"
+                + b"\x48\x8B\x05"
+                + relative.to_bytes(4, "little", signed=True)
+                + b"\x90\x90"
         )
         memory = FakeMemory(data, base=base)
 

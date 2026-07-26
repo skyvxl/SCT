@@ -67,7 +67,7 @@ class ModEngineConfig:
         if start == end:
             source_lines = (lines[start],)
         else:
-            source_lines = lines[start + 1 : end]
+            source_lines = lines[start + 1: end]
         for line in source_lines:
             if start == end:
                 matches = _INLINE_STRING.finditer(line.partition("[")[2].rpartition("]")[0])
@@ -82,7 +82,7 @@ class ModEngineConfig:
                         path=dll_path,
                         enabled=enabled,
                         locked=_normalized_dll_path(dll_path)
-                        == _normalized_dll_path(ERSC_DLL_PATH),
+                               == _normalized_dll_path(ERSC_DLL_PATH),
                     )
                 )
         return tuple(parsed)
@@ -111,7 +111,7 @@ class ModEngineConfig:
             )
             replacement.append(f'    "{encoded}"{newline}')
             replacement.append(f"]{newline}")
-            lines[start : start + 1] = replacement
+            lines[start: start + 1] = replacement
         else:
             lines.insert(end, f'    "{encoded}"{newline}')
         self._atomic_write("".join(lines))
@@ -138,12 +138,12 @@ class ModEngineConfig:
         self._atomic_write("".join(lines))
 
     def _set_enabled_in_lines(
-        self,
-        lines: list[str],
-        start: int,
-        end: int,
-        path: str,
-        enabled: bool,
+            self,
+            lines: list[str],
+            start: int,
+            end: int,
+            path: str,
+            enabled: bool,
     ) -> bool:
         if start == end:
             return False
@@ -222,13 +222,13 @@ class ModEngineConfig:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                "w",
-                encoding="utf-8",
-                newline="",
-                delete=False,
-                dir=self.path.parent,
-                prefix=f".{self.path.name}.",
-                suffix=".tmp",
+                    "w",
+                    encoding="utf-8",
+                    newline="",
+                    delete=False,
+                    dir=self.path.parent,
+                    prefix=f".{self.path.name}.",
+                    suffix=".tmp",
             ) as temporary:
                 temporary.write(document)
                 temporary.flush()

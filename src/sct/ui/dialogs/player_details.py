@@ -142,11 +142,11 @@ class PlayerDetailsDialog(QDialog):
     apply_requested = Signal(object, bool)
 
     def __init__(
-        self,
-        translator: TranslationService,
-        details: PlayerDetails,
-        catalog: ItemCatalog | None = None,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            details: PlayerDetails,
+            catalog: ItemCatalog | None = None,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator
@@ -249,8 +249,8 @@ class PlayerDetailsDialog(QDialog):
         if "runes" in self.details.stats:
             stats["runes"] = self.details.stats["runes"]
         for name in (
-            "scadutree_blessing",
-            "revered_spirit_ash_blessing",
+                "scadutree_blessing",
+                "revered_spirit_ash_blessing",
         ):
             field = self.stats_inputs.get(name)
             if field is not None:
@@ -323,12 +323,12 @@ class PlayerDetailsDialog(QDialog):
         return column
 
     def _add_spin(
-        self,
-        form: QFormLayout,
-        name: str,
-        label_key: str,
-        minimum: int,
-        maximum: int,
+            self,
+            form: QFormLayout,
+            name: str,
+            label_key: str,
+            minimum: int,
+            maximum: int,
     ) -> None:
         field = QSpinBox()
         field.setRange(minimum, maximum)
@@ -340,8 +340,8 @@ class PlayerDetailsDialog(QDialog):
         self.stats_inputs[name] = field
 
     def _build_equipment_column(
-        self,
-        sections: tuple[tuple[str, tuple[str, ...]], ...],
+            self,
+            sections: tuple[tuple[str, tuple[str, ...]], ...],
     ) -> QWidget:
         column = QWidget()
         layout = QVBoxLayout(column)

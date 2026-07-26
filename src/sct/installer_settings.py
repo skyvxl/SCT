@@ -15,7 +15,7 @@ _OPTION_PATTERN = re.compile(
 
 
 def _read_existing_values(
-    path: Path | None,
+        path: Path | None,
 ) -> OrderedDict[str, tuple[str, OrderedDict[str, tuple[str, str]]]]:
     values: OrderedDict[str, tuple[str, OrderedDict[str, tuple[str, str]]]] = OrderedDict()
     if path is None or not path.is_file():
@@ -32,10 +32,10 @@ def _read_existing_values(
 
 
 def merge_ersc_settings(
-    template: Path | str,
-    existing: Path | str | None,
-    destination: Path | str,
-    password: str,
+        template: Path | str,
+        existing: Path | str | None,
+        destination: Path | str,
+        password: str,
 ) -> None:
     template_path = Path(template)
     existing_path = Path(existing) if existing is not None else None
@@ -105,13 +105,13 @@ def _atomic_write(path: Path, document: str) -> None:
     temporary_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            "w",
-            encoding="utf-8",
-            newline="",
-            delete=False,
-            dir=path.parent,
-            prefix=f".{path.name}.",
-            suffix=".tmp",
+                "w",
+                encoding="utf-8",
+                newline="",
+                delete=False,
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
         ) as temporary:
             temporary.write(document)
             temporary.flush()

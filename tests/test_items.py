@@ -22,9 +22,9 @@ def write_required_item_files(root: Path) -> None:
 
 
 def write_catalog(
-    root: Path,
-    filename: str,
-    rows: list[dict[str, object]],
+        root: Path,
+        filename: str,
+        rows: list[dict[str, object]],
 ) -> None:
     fieldnames = ["ID", "icon_id", "Upgrade", "en", "ru"]
     with (root / filename).open("w", encoding="utf-8-sig", newline="") as stream:

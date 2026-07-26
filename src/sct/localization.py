@@ -49,10 +49,10 @@ class TranslationService(QObject):
     language_changed = Signal(str)
 
     def __init__(
-        self,
-        catalog_root: Path | None = None,
-        locale: str = "ru",
-        parent: QObject | None = None,
+            self,
+            catalog_root: Path | None = None,
+            locale: str = "ru",
+            parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._catalog_root = catalog_root or resource_path("i18n")

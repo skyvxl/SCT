@@ -43,11 +43,11 @@ class InventoryServiceProtocol(Protocol):
 
 class BuildApplyServiceProtocol(Protocol):
     def apply(
-        self,
-        *,
-        player_num: int,
-        build: SavedBuild,
-        equipment_only: bool = False,
+            self,
+            *,
+            player_num: int,
+            build: SavedBuild,
+            equipment_only: bool = False,
     ) -> None: ...
 
 
@@ -55,9 +55,9 @@ class RosterTrackerProtocol(Protocol):
     def restore(self) -> tuple[RecentPlayerRecord, ...]: ...
 
     def observe(
-        self,
-        players: tuple[PlayerSnapshot, ...],
-        details: dict[str, PlayerDetails] | None = None,
+            self,
+            players: tuple[PlayerSnapshot, ...],
+            details: dict[str, PlayerDetails] | None = None,
     ) -> tuple[RecentPlayerRecord, ...]: ...
 
 
@@ -87,17 +87,17 @@ class GameSnapshot:
 
 class EldenRingRuntime:
     def __init__(
-        self,
-        *,
-        memory_factory: MemoryFactory,
-        resolver_factory: ResolverFactory,
-        player_service_factory: PlayerServiceFactory,
-        roster_tracker: RosterTrackerProtocol,
-        cheat_runtime: CheatRuntimeProtocol,
-        inventory_service_factory: InventoryServiceFactory = EldenRingInventoryService,
-        build_apply_service_factory: BuildApplyServiceFactory = (
-            EldenRingBuildApplyService
-        ),
+            self,
+            *,
+            memory_factory: MemoryFactory,
+            resolver_factory: ResolverFactory,
+            player_service_factory: PlayerServiceFactory,
+            roster_tracker: RosterTrackerProtocol,
+            cheat_runtime: CheatRuntimeProtocol,
+            inventory_service_factory: InventoryServiceFactory = EldenRingInventoryService,
+            build_apply_service_factory: BuildApplyServiceFactory = (
+                    EldenRingBuildApplyService
+            ),
     ) -> None:
         self._memory_factory = memory_factory
         self._resolver_factory = resolver_factory
@@ -212,10 +212,10 @@ class EldenRingRuntime:
             ) from error
 
     def apply_build(
-        self,
-        build: SavedBuild,
-        *,
-        equipment_only: bool = False,
+            self,
+            build: SavedBuild,
+            *,
+            equipment_only: bool = False,
     ) -> GameSnapshot:
         try:
             self._ensure_player_service()

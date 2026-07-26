@@ -26,11 +26,11 @@ INVALID_MODEL_INDEX = QModelIndex()
 
 class ItemTableModel(QAbstractTableModel):
     def __init__(
-        self,
-        catalog: ItemCatalog,
-        category: ItemCategory,
-        translator: TranslationService,
-        parent: QWidget | None = None,
+            self,
+            catalog: ItemCatalog,
+            category: ItemCategory,
+            translator: TranslationService,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.catalog = catalog
@@ -46,9 +46,9 @@ class ItemTableModel(QAbstractTableModel):
         return 0 if parent.isValid() else 3
 
     def data(
-        self,
-        index: QModelIndex,
-        role: int = Qt.ItemDataRole.DisplayRole,
+            self,
+            index: QModelIndex,
+            role: int = Qt.ItemDataRole.DisplayRole,
     ) -> object:
         if not index.isValid() or not 0 <= index.row() < len(self._items):
             return None
@@ -68,10 +68,10 @@ class ItemTableModel(QAbstractTableModel):
         return None
 
     def headerData(
-        self,
-        section: int,
-        orientation: Qt.Orientation,
-        role: int = Qt.ItemDataRole.DisplayRole,
+            self,
+            section: int,
+            orientation: Qt.Orientation,
+            role: int = Qt.ItemDataRole.DisplayRole,
     ) -> object:
         if orientation != Qt.Orientation.Horizontal or role != Qt.ItemDataRole.DisplayRole:
             return None
@@ -112,11 +112,11 @@ class ItemTableModel(QAbstractTableModel):
 
 class ItemSelectorDialog(QDialog):
     def __init__(
-        self,
-        translator: TranslationService,
-        catalog: ItemCatalog,
-        category: ItemCategory,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            catalog: ItemCatalog,
+            category: ItemCategory,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator
@@ -267,7 +267,7 @@ class ItemSelectorDialog(QDialog):
             ash_of_war=(
                 self._selected_ash.id
                 if self.category is ItemCategory.WEAPONS
-                and self._selected_ash is not None
+                   and self._selected_ash is not None
                 else None
             ),
         )

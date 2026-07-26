@@ -57,12 +57,12 @@ class FakeInventory:
             self.memory.u32[entry + 0x8] = 0
 
     def put(
-        self,
-        kind: InventoryKind,
-        index: int,
-        raw_id: int,
-        *,
-        quantity: int = 1,
+            self,
+            kind: InventoryKind,
+            index: int,
+            raw_id: int,
+            *,
+            quantity: int = 1,
     ) -> None:
         key_offset = 0x10 if self.LAYOUTS[kind].key_items else 0
         list_ptr = self.memory.ptrs[self.PLAYER_EQUIP + 0x10 + key_offset]
@@ -108,9 +108,9 @@ class RecordingInvoker:
 
 class SeamlessInventoryTests(unittest.TestCase):
     def cleaner(
-        self,
-        fixture: FakeInventory,
-        invoker: RecordingInvoker | None = None,
+            self,
+            fixture: FakeInventory,
+            invoker: RecordingInvoker | None = None,
     ) -> SeamlessInventoryCleaner:
         return SeamlessInventoryCleaner(
             memory=fixture.memory,

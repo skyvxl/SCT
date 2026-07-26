@@ -152,10 +152,10 @@ def _parse_vdf(document: str) -> dict[str, Any]:
 
 class SteamService:
     def __init__(
-        self,
-        *,
-        process_names: Callable[[], tuple[str, ...]] = iter_windows_process_names,
-        start_process: Callable[..., Any] = subprocess.Popen,
+            self,
+            *,
+            process_names: Callable[[], tuple[str, ...]] = iter_windows_process_names,
+            start_process: Callable[..., Any] = subprocess.Popen,
     ) -> None:
         self._process_names = process_names
         self._start_process = start_process
@@ -182,8 +182,8 @@ class SteamService:
             return None
         try:
             with winreg.OpenKey(
-                winreg.HKEY_CURRENT_USER,
-                r"Software\Valve\Steam\ActiveProcess",
+                    winreg.HKEY_CURRENT_USER,
+                    r"Software\Valve\Steam\ActiveProcess",
             ) as key:
                 active_user = int(winreg.QueryValueEx(key, "ActiveUser")[0])
         except (OSError, TypeError, ValueError):

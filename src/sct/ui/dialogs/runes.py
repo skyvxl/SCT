@@ -16,10 +16,10 @@ from sct.localization import TranslationService
 
 class RuneDialog(QDialog):
     def __init__(
-        self,
-        translator: TranslationService,
-        current_value: int,
-        parent: QWidget | None = None,
+            self,
+            translator: TranslationService,
+            current_value: int,
+            parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.translator = translator

@@ -76,17 +76,17 @@ class FakeResolver:
 
 
 def seed_player(
-    memory: FakeMemory,
-    *,
-    slot_array: int,
-    slot: int,
-    player_ins: int,
-    base: int,
-    name: str,
-    level: int,
-    hp: int,
-    max_hp: int,
-    runes: int,
+        memory: FakeMemory,
+        *,
+        slot_array: int,
+        slot: int,
+        player_ins: int,
+        base: int,
+        name: str,
+        level: int,
+        hp: int,
+        max_hp: int,
+        runes: int,
 ) -> None:
     memory.seed_ptr(slot_array + slot * 0x10, player_ins)
     memory.seed_ptr(player_ins + 0x580, base)
@@ -189,14 +189,14 @@ class PlayerServiceTests(unittest.TestCase):
     def test_read_details_includes_stats_and_normalizes_weapon_upgrade(self) -> None:
         base = 0x4000
         for offset, value in (
-            (0x3C, 30),
-            (0x40, 20),
-            (0x44, 25),
-            (0x48, 18),
-            (0x4C, 22),
-            (0x50, 10),
-            (0x54, 12),
-            (0x58, 9),
+                (0x3C, 30),
+                (0x40, 20),
+                (0x44, 25),
+                (0x48, 18),
+                (0x4C, 22),
+                (0x50, 10),
+                (0x54, 12),
+                (0x58, 9),
         ):
             self.memory.seed_i32(base + offset, value)
         self.memory.seed_u8(base + 0xFC, 15)

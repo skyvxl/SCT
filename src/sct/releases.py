@@ -31,9 +31,9 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
         asset
         for asset in assets
         if isinstance(asset, Mapping)
-        and isinstance(asset.get("name"), str)
-        and str(asset["name"]).casefold().endswith(".zip")
-        and isinstance(asset.get("browser_download_url"), str)
+           and isinstance(asset.get("name"), str)
+           and str(asset["name"]).casefold().endswith(".zip")
+           and isinstance(asset.get("browser_download_url"), str)
     ]
     if not zip_assets:
         raise ReleaseError(
@@ -55,9 +55,9 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
     selected = candidates[0]
     selected_name = str(selected["name"])
     if (
-        PurePosixPath(selected_name).name != selected_name
-        or PureWindowsPath(selected_name).name != selected_name
-        or PureWindowsPath(selected_name).drive
+            PurePosixPath(selected_name).name != selected_name
+            or PureWindowsPath(selected_name).name != selected_name
+            or PureWindowsPath(selected_name).drive
     ):
         raise ReleaseError(
             "release_asset_name_unsafe",

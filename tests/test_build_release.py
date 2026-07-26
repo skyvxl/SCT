@@ -34,7 +34,7 @@ class ReleaseBuildTests(unittest.TestCase):
         self.assertIn("images.zip", message)
 
     def test_release_environment_uses_ci_value_without_copying_other_secrets(
-        self,
+            self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             project_root = Path(temporary_directory)
@@ -127,8 +127,8 @@ class ReleaseBuildTests(unittest.TestCase):
                     [
                         "Seamless-Co-op-Toolkit-0.1.0-dev-win64/"
                         "Seamless Co-op Toolkit.exe"
-                ],
-            )
+                    ],
+                )
 
     def test_items_zip_has_extractable_items_root_and_required_files(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -150,7 +150,7 @@ class ReleaseBuildTests(unittest.TestCase):
                 )
 
     def test_third_party_license_bundle_uses_safe_component_directories(
-        self,
+            self,
     ) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

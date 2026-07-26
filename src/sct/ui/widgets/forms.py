@@ -24,10 +24,10 @@ def section(page: LocalizedPage, title_key: str) -> QGroupBox:
 
 
 def add_form_row(
-    page: LocalizedPage,
-    layout: QFormLayout,
-    label_key: str,
-    field: QWidget,
+        page: LocalizedPage,
+        layout: QFormLayout,
+        label_key: str,
+        field: QWidget,
 ) -> QLabel:
     label = QLabel()
     page.bind(label.setText, label_key)
@@ -43,9 +43,9 @@ def action_button(page: LocalizedPage, key: str, object_name: str) -> QPushButto
 
 
 def translated_table(
-    page: LocalizedPage,
-    header_keys: Sequence[str],
-    object_name: str,
+        page: LocalizedPage,
+        header_keys: Sequence[str],
+        object_name: str,
 ) -> QTableWidget:
     table = QTableWidget(0, len(header_keys))
     table.setObjectName(object_name)

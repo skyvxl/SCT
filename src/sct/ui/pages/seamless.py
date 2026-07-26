@@ -32,9 +32,9 @@ def spin_box(value: int, minimum: int = 0, maximum: int = 999) -> QSpinBox:
 
 class SeamlessPage(LocalizedPage):
     def __init__(
-        self,
-        translator: TranslationService,
-        settings_store: SettingsStore,
+            self,
+            translator: TranslationService,
+            settings_store: SettingsStore,
     ) -> None:
         super().__init__(translator)
         self.settings_store = settings_store
@@ -59,12 +59,12 @@ class SeamlessPage(LocalizedPage):
         self.append_steam_id = QCheckBox()
         self.always_spectate = QCheckBox()
         for control, key in (
-            (self.allow_invaders, "seamless.gameplay.allow_invaders"),
-            (self.death_debuffs, "seamless.gameplay.death_debuffs"),
-            (self.allow_summons, "seamless.gameplay.allow_summons"),
-            (self.skip_splash, "seamless.gameplay.skip_splash"),
-            (self.append_steam_id, "seamless.gameplay.append_steam_id"),
-            (self.always_spectate, "seamless.gameplay.always_spectate"),
+                (self.allow_invaders, "seamless.gameplay.allow_invaders"),
+                (self.death_debuffs, "seamless.gameplay.death_debuffs"),
+                (self.allow_summons, "seamless.gameplay.allow_summons"),
+                (self.skip_splash, "seamless.gameplay.skip_splash"),
+                (self.append_steam_id, "seamless.gameplay.append_steam_id"),
+                (self.always_spectate, "seamless.gameplay.always_spectate"),
         ):
             self.bind(control.setText, key)
             gameplay_layout.addRow(control)
@@ -132,12 +132,12 @@ class SeamlessPage(LocalizedPage):
         root.addWidget(scroll)
 
         for control in (
-            self.allow_invaders,
-            self.death_debuffs,
-            self.allow_summons,
-            self.skip_splash,
-            self.append_steam_id,
-            self.always_spectate,
+                self.allow_invaders,
+                self.death_debuffs,
+                self.allow_summons,
+                self.skip_splash,
+                self.append_steam_id,
+                self.always_spectate,
         ):
             control.toggled.connect(self._save_settings)
         self.overhead_combo.currentIndexChanged.connect(self._save_settings)

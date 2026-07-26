@@ -129,10 +129,10 @@ class ErscSettingsStore:
 
     @staticmethod
     def _insert_missing_options(
-        lines: list[str],
-        section: str,
-        missing: list[tuple[str, str]],
-        newline: str,
+            lines: list[str],
+            section: str,
+            missing: list[tuple[str, str]],
+            newline: str,
     ) -> list[str]:
         section_index: int | None = None
         insertion_index = len(lines)
@@ -162,13 +162,13 @@ class ErscSettingsStore:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
-                "w",
-                encoding="utf-8",
-                newline="",
-                delete=False,
-                dir=self.path.parent,
-                prefix=f".{self.path.name}.",
-                suffix=".tmp",
+                    "w",
+                    encoding="utf-8",
+                    newline="",
+                    delete=False,
+                    dir=self.path.parent,
+                    prefix=f".{self.path.name}.",
+                    suffix=".tmp",
             ) as temporary:
                 temporary.write(document)
                 temporary.flush()

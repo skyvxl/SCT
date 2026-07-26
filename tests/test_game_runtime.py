@@ -42,9 +42,9 @@ class FakeTracker:
         return ()
 
     def observe(
-        self,
-        players: tuple[PlayerSnapshot, ...],
-        details: dict[str, PlayerDetails] | None = None,
+            self,
+            players: tuple[PlayerSnapshot, ...],
+            details: dict[str, PlayerDetails] | None = None,
     ) -> tuple[object, ...]:
         self.observed.append(players)
         return ()
@@ -262,11 +262,11 @@ class RuntimeTests(unittest.TestCase):
 
         class ApplyService:
             def apply(
-                self,
-                *,
-                player_num: int,
-                build: SavedBuild,
-                equipment_only: bool,
+                    self,
+                    *,
+                    player_num: int,
+                    build: SavedBuild,
+                    equipment_only: bool,
             ) -> None:
                 applied.append((player_num, build, equipment_only))
 

@@ -48,11 +48,11 @@ class CurrentGamePage(LocalizedPage):
     shutdown_requested = Signal()
 
     def __init__(
-        self,
-        translator: TranslationService,
-        runtime: EldenRingRuntime,
-        *,
-        start_worker_thread: bool = True,
+            self,
+            translator: TranslationService,
+            runtime: EldenRingRuntime,
+            *,
+            start_worker_thread: bool = True,
     ) -> None:
         super().__init__(translator)
         self.runtime = runtime
@@ -266,12 +266,12 @@ class CurrentGamePage(LocalizedPage):
         )
 
     def _show_context_menu(
-        self,
-        keys: tuple[str, ...],
-        global_position: QPoint,
-        row: int,
-        *,
-        recent: bool,
+            self,
+            keys: tuple[str, ...],
+            global_position: QPoint,
+            row: int,
+            *,
+            recent: bool,
     ) -> None:
         if not keys:
             return
@@ -415,10 +415,10 @@ class CurrentGamePage(LocalizedPage):
             self._pending_build_dialog = None
 
     def _apply_build(
-        self,
-        dialog: PlayerDetailsDialog,
-        build: SavedBuild,
-        equipment_only: bool,
+            self,
+            dialog: PlayerDetailsDialog,
+            build: SavedBuild,
+            equipment_only: bool,
     ) -> None:
         self._pending_build_dialog = dialog
         self.build_apply_requested.emit(build, equipment_only)

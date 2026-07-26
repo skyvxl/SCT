@@ -125,10 +125,10 @@ BackendFactory = Callable[[str], MemoryBackendProtocol]
 
 class MemoryClient:
     def __init__(
-        self,
-        process_name: str,
-        *,
-        backend_factory: BackendFactory = _PymemBackend,
+            self,
+            process_name: str,
+            *,
+            backend_factory: BackendFactory = _PymemBackend,
     ) -> None:
         self.process_name = process_name
         self._backend = backend_factory(process_name)

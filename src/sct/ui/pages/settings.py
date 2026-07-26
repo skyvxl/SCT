@@ -60,6 +60,7 @@ def configured_spin(value: int, minimum: int, maximum: int) -> QSpinBox:
 
 class SettingsPage(LocalizedPage):
     game_directory_changed = Signal(str)
+    backup_settings_changed = Signal()
 
     def __init__(
             self,
@@ -278,6 +279,14 @@ class SettingsPage(LocalizedPage):
         self.backup_interval = configured_spin(5, 1, 1440)
         self.backup_interval.setObjectName("backupIntervalSpin")
         add_form_row(self, backup_form, "settings.backup.interval", self.backup_interval)
+        self.backup_sleep = configured_spin(10, 1, 3600)
+        self.backup_sleep.setObjectName("backupSleepSpin")
+        add_form_row(
+            self,
+            backup_form,
+            "settings.backup.sleep_between",
+            self.backup_sleep,
+        )
         self.maximum_backups = configured_spin(20, 1, 999)
         self.maximum_backups.setObjectName("maximumBackupsSpin")
         add_form_row(self, backup_form, "settings.backup.maximum", self.maximum_backups)
@@ -301,6 +310,7 @@ class SettingsPage(LocalizedPage):
                 "settings.backup.shortcut_stop",
         ):
             editor = QKeySequenceEdit()
+            editor.setMaximumSequenceLength(1)
             self.shortcut_edits.append(editor)
             add_form_row(self, shortcuts_form, key, editor)
         backup_form.addRow(shortcuts)
@@ -311,7 +321,10 @@ class SettingsPage(LocalizedPage):
         root.addWidget(self.scroll)
 
         self.notification_sound = QSoundEffect(self)
-        notification_path = optional_resource_path("save_notification.wav")
+        notification_path = optional_resource_path(
+            "audios",
+            "save_notification.wav",
+        )
         if notification_path is not None:
             self.notification_sound.setSource(QUrl.fromLocalFile(str(notification_path)))
 
@@ -349,6 +362,7 @@ class SettingsPage(LocalizedPage):
             )
         )
         self.backup_interval.setValue(settings.auto_backup_interval)
+        self.backup_sleep.setValue(settings.sleep_between_saves)
         self.maximum_backups.setValue(settings.max_backups)
         self.notification_sounds.setChecked(settings.enable_sounds)
         self.notification_volume.setValue(settings.sound_volume)
@@ -402,6 +416,9 @@ class SettingsPage(LocalizedPage):
         self.backup_interval.valueChanged.connect(
             lambda value: self._persist(auto_backup_interval=value)
         )
+        self.backup_sleep.valueChanged.connect(
+            lambda value: self._persist(sleep_between_saves=value)
+        )
         self.maximum_backups.valueChanged.connect(lambda value: self._persist(max_backups=value))
         self.notification_sounds.toggled.connect(
             lambda checked: self._persist(enable_sounds=checked)
@@ -430,6 +447,15 @@ class SettingsPage(LocalizedPage):
             self.settings_store.update(**changes)
         except OSError:
             LOGGER.exception("Unable to save manager settings")
+            return
+        hotkey_fields = {
+            "save_backup_key",
+            "load_backup_key",
+            "start_auto_backup_key",
+            "stop_auto_backup_key",
+        }
+        if hotkey_fields.intersection(changes):
+            self.backup_settings_changed.emit()
 
     def _browse_game_directory(self) -> None:
         selected = QFileDialog.getExistingDirectory(

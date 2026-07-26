@@ -35,10 +35,10 @@ def resolve_launch_target(settings: AppSettings) -> Path:
 
 class HomePage(LocalizedPage):
     def __init__(
-        self,
-        translator: TranslationService,
-        settings_store: SettingsStore,
-        steam_service: SteamService,
+            self,
+            translator: TranslationService,
+            settings_store: SettingsStore,
+            steam_service: SteamService,
     ) -> None:
         super().__init__(translator)
         self.settings_store = settings_store

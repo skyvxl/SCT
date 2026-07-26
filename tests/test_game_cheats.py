@@ -55,11 +55,11 @@ class FakeScanner:
         self.patterns: list[str] = []
 
     def scan_module_unique(
-        self,
-        module: ModuleInfo,
-        pattern: str,
-        *,
-        symbol: str,
+            self,
+            module: ModuleInfo,
+            pattern: str,
+            *,
+            symbol: str,
     ) -> int:
         self.patterns.append(pattern)
         return self.address

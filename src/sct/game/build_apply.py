@@ -80,24 +80,24 @@ EquipmentApplierFactory = Callable[
 
 class EldenRingBuildApplyService:
     def __init__(
-        self,
-        memory: MemoryClientProtocol,
-        resolver: ResolverProtocol,
-        *,
-        equipment_applier_factory: EquipmentApplierFactory | None = None,
+            self,
+            memory: MemoryClientProtocol,
+            resolver: ResolverProtocol,
+            *,
+            equipment_applier_factory: EquipmentApplierFactory | None = None,
     ) -> None:
         self._memory = memory
         self._resolver = resolver
         self._equipment_applier_factory = (
-            equipment_applier_factory or EldenRingEquipmentApplier
+                equipment_applier_factory or EldenRingEquipmentApplier
         )
 
     def apply(
-        self,
-        *,
-        player_num: int,
-        build: SavedBuild,
-        equipment_only: bool = False,
+            self,
+            *,
+            player_num: int,
+            build: SavedBuild,
+            equipment_only: bool = False,
     ) -> None:
         if player_num != 0:
             raise GameRuntimeError("Builds can only be applied to the local player")
@@ -123,11 +123,11 @@ class EldenRingBuildApplyService:
         if "runes" in stats and not 0 <= int(stats["runes"]) <= MAX_RUNES:
             raise ValueError(f"runes must be between 0 and {MAX_RUNES}")
         if "scadutree_blessing" in stats and not 0 <= int(
-            stats["scadutree_blessing"]
+                stats["scadutree_blessing"]
         ) <= 20:
             raise ValueError("scadutree_blessing must be between 0 and 20")
         if "revered_spirit_ash_blessing" in stats and not 0 <= int(
-            stats["revered_spirit_ash_blessing"]
+                stats["revered_spirit_ash_blessing"]
         ) <= 10:
             raise ValueError(
                 "revered_spirit_ash_blessing must be between 0 and 10"
@@ -171,9 +171,9 @@ class _PreparedEquipment:
 
 class EldenRingEquipmentApplier:
     def __init__(
-        self,
-        memory: MemoryClientProtocol,
-        resolver: ResolverProtocol,
+            self,
+            memory: MemoryClientProtocol,
+            resolver: ResolverProtocol,
     ) -> None:
         self._memory = memory
         self._resolver = resolver
@@ -278,13 +278,13 @@ class EldenRingEquipmentApplier:
         return value
 
     def _apply_slot(
-        self,
-        prepared: _PreparedEquipment,
-        equip_data: int,
-        item_give_data: int,
-        slot_name: str,
-        value: EquipmentValue,
-        used_weapon_indices: set[int],
+            self,
+            prepared: _PreparedEquipment,
+            equip_data: int,
+            item_give_data: int,
+            slot_name: str,
+            value: EquipmentValue,
+            used_weapon_indices: set[int],
     ) -> None:
         slot = SLOT_NUMBERS[slot_name]
         if value is None:
@@ -356,10 +356,10 @@ class EldenRingEquipmentApplier:
         self._equip_slot(prepared, equip_data, slot, index)
 
     def _apply_spells(
-        self,
-        prepared: _PreparedEquipment,
-        item_give_data: int,
-        equipment: Mapping[str, EquipmentValue],
+            self,
+            prepared: _PreparedEquipment,
+            item_give_data: int,
+            equipment: Mapping[str, EquipmentValue],
     ) -> None:
         relevant = [(slot, equipment[slot]) for slot in SPELL_SLOTS if slot in equipment]
         if not relevant:
@@ -400,8 +400,8 @@ class EldenRingEquipmentApplier:
         return item_id
 
     def _inventory_entries(
-        self,
-        prepared: _PreparedEquipment,
+            self,
+            prepared: _PreparedEquipment,
     ) -> list[tuple[int, int]]:
         count = self._memory.read_u32(prepared.equip_inventory_data + 0x18)
         if count > MAX_INVENTORY_ENTRIES:
@@ -427,9 +427,9 @@ class EldenRingEquipmentApplier:
         return entries
 
     def _item_indices(
-        self,
-        prepared: _PreparedEquipment,
-        full_item_id: int,
+            self,
+            prepared: _PreparedEquipment,
+            full_item_id: int,
     ) -> list[int]:
         wanted = full_item_id & 0xFFFFFFFF
         return [
@@ -439,12 +439,12 @@ class EldenRingEquipmentApplier:
         ]
 
     def _ensure_item(
-        self,
-        prepared: _PreparedEquipment,
-        item_give_data: int,
-        full_item_id: int,
-        *,
-        quantity: int,
+            self,
+            prepared: _PreparedEquipment,
+            item_give_data: int,
+            full_item_id: int,
+            *,
+            quantity: int,
     ) -> int | None:
         indices = self._item_indices(prepared, full_item_id)
         if indices:
@@ -457,13 +457,13 @@ class EldenRingEquipmentApplier:
         )
 
     def _give_new_item(
-        self,
-        prepared: _PreparedEquipment,
-        item_give_data: int,
-        full_item_id: int,
-        *,
-        quantity: int,
-        gem: int = -1,
+            self,
+            prepared: _PreparedEquipment,
+            item_give_data: int,
+            full_item_id: int,
+            *,
+            quantity: int,
+            gem: int = -1,
     ) -> int | None:
         before = set(self._item_indices(prepared, full_item_id))
         table = item_give_data + 32
@@ -485,30 +485,30 @@ class EldenRingEquipmentApplier:
         )
 
     def _ensure_ash_of_war(
-        self,
-        prepared: _PreparedEquipment,
-        item_give_data: int,
-        ash_of_war: int,
+            self,
+            prepared: _PreparedEquipment,
+            item_give_data: int,
+            ash_of_war: int,
     ) -> None:
         base = ash_of_war & 0x0FFFFFFF
         for item_type in (OTHER_TYPE, GOODS_TYPE):
             if (
-                self._ensure_item(
-                    prepared,
-                    item_give_data,
-                    item_type | base,
-                    quantity=1,
-                )
-                is not None
+                    self._ensure_item(
+                        prepared,
+                        item_give_data,
+                        item_type | base,
+                        quantity=1,
+                    )
+                    is not None
             ):
                 return
         raise GameRuntimeError(f"Unable to give Ash of War {ash_of_war}")
 
     def _write_inventory_quantity(
-        self,
-        prepared: _PreparedEquipment,
-        index: int,
-        quantity: int,
+            self,
+            prepared: _PreparedEquipment,
+            index: int,
+            quantity: int,
     ) -> None:
         self._memory.write_u32(
             prepared.inventory_list + index * INVENTORY_ENTRY_SIZE + 0x08,
@@ -516,11 +516,11 @@ class EldenRingEquipmentApplier:
         )
 
     def _equip_slot(
-        self,
-        prepared: _PreparedEquipment,
-        equip_data: int,
-        slot: int,
-        inventory_index: int,
+            self,
+            prepared: _PreparedEquipment,
+            equip_data: int,
+            slot: int,
+            inventory_index: int,
     ) -> None:
         tail = self._memory.read_u32(prepared.equip_inventory_data + 0x1C)
         if tail > 8192:
@@ -544,17 +544,17 @@ class EldenRingEquipmentApplier:
             remote_slot = slot - 22
             extra_arguments = ()
         shellcode = bytearray(
-            
-                b"\x48\x83\xEC\x38"
-                + b"\x48\xB9"
-                + prepared.equip_game_data.to_bytes(8, "little")
-                + b"\xBA"
-                + remote_slot.to_bytes(4, "little")
-                + b"\x49\xB8"
-                + (equip_data + 0x10).to_bytes(8, "little")
-                + b"\x41\xB9"
-                + final_index.to_bytes(4, "little", signed=True)
-            
+
+            b"\x48\x83\xEC\x38"
+            + b"\x48\xB9"
+            + prepared.equip_game_data.to_bytes(8, "little")
+            + b"\xBA"
+            + remote_slot.to_bytes(4, "little")
+            + b"\x49\xB8"
+            + (equip_data + 0x10).to_bytes(8, "little")
+            + b"\x41\xB9"
+            + final_index.to_bytes(4, "little", signed=True)
+
         )
         for index, argument in enumerate(extra_arguments):
             shellcode.extend(
@@ -579,10 +579,10 @@ class EldenRingEquipmentApplier:
 
     @staticmethod
     def _build_item_give_stub(
-        function: int,
-        game_data_man: int,
-        item_table: int,
-        scratch: int,
+            function: int,
+            game_data_man: int,
+            item_table: int,
+            scratch: int,
     ) -> bytes:
         return b"".join(
             (

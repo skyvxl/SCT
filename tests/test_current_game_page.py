@@ -19,13 +19,13 @@ from tests.qt_helpers import get_qapplication
 
 
 def snapshot_player(
-    player_num: int,
-    name: str,
-    *,
-    local: bool,
-    runes: int | None,
-    hp: int = 900,
-    max_hp: int = 1000,
+        player_num: int,
+        name: str,
+        *,
+        local: bool,
+        runes: int | None,
+        hp: int = 900,
+        max_hp: int = 1000,
 ) -> PlayerSnapshot:
     return PlayerSnapshot(
         player_num=player_num,
@@ -156,7 +156,7 @@ class CurrentGamePageTests(unittest.TestCase):
         )
 
     def test_missing_item_data_blocks_player_details_and_lists_missing_files(
-        self,
+            self,
     ) -> None:
         self.page._item_catalog = None
         self.page._item_data_error = ItemDataNotFound(
