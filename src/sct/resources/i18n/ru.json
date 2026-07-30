@@ -20,6 +20,7 @@
   },
   "footer": {
     "mod_not_detected": "Elden Ring Seamless Co-op Версия: Не определена",
+    "mod_version": "Elden Ring Seamless Co-op Версия: {version}",
     "manager_version": "Версия менеджера: {version}"
   },
   "common": {
@@ -293,7 +294,8 @@
     "language": {
       "title": "Языки",
       "label": "Выберите язык программы",
-      "russian": "Русский"
+      "russian": "Русский",
+      "english": "Английский"
     },
     "game_path": {
       "title": "Путь к папке с игрой",
@@ -363,6 +365,7 @@
   "auto_setup": {
     "title": "Автоматическая установка Seamless Co-op и ModEngine",
     "instructions": "Этот мастер установщик поможет вам настроить Seamless Co-op с ModEngine.\n\n1. Выберите папку с игрой Elden Ring\n2. Установите свой пароль для участия в кооперативе\n3. Мастер установщик автоматически:\n   - Скачает и установит ModEngine\n   - Скачает и установит Seamless Co-op\n   - Настроит все необходимые файлы\n   - Сохранит ваши настройки",
+    "github_nexus_warning": "Важно: версия в зеркале GitHub может быть старее актуальной версии на Nexus Mods. Если Seamless Co-op не запускается, установите последнюю версию с Nexus Mods вручную.",
     "game_path": "Путь к папке с игрой:",
     "game_path_placeholder": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\ELDEN RING\\Game",
     "password": "Пароль для кооператива:",
@@ -385,6 +388,28 @@
       "complete": "Установка завершена."
     }
   },
+  "updates": {
+    "error_title": "Ошибка обновления",
+    "error": "Не удалось проверить или установить обновление.\n\n{message}",
+    "toolkit": {
+      "title": "Обновление Seamless Co-op Toolkit",
+      "available": "Доступна версия Toolkit {latest}. У вас установлена {installed}.\n\nОткрыть страницу релиза на GitHub?",
+      "current": "У вас установлена последняя версия Toolkit: {installed}.",
+      "ahead": "Установленная версия Toolkit {installed} новее последнего релиза GitHub {latest}."
+    },
+    "ersc": {
+      "title": "Обновление Seamless Co-op",
+      "github_nexus_warning": "Версия в зеркале GitHub может быть старее актуальной версии на Nexus Mods. Если Seamless Co-op не запускается, установите последнюю версию с Nexus Mods вручную.",
+      "not_installed": "Не удалось определить установленную версию Seamless Co-op. Открыть автоматическую установку?",
+      "current": "У вас установлена последняя доступная на GitHub версия Seamless Co-op: {installed}.",
+      "ahead": "Установленная версия Seamless Co-op {installed} новее релиза GitHub {latest}. Понижение версии выполняться не будет.",
+      "available": "Доступна версия Seamless Co-op {latest}. У вас установлена {installed}.\n\nСкачать и установить обновление?",
+      "installing_title": "Обновление Seamless Co-op",
+      "installing": "Загрузка и установка Seamless Co-op…",
+      "success_title": "Обновление завершено",
+      "success": "Seamless Co-op {version} успешно установлен."
+    }
+  },
   "errors": {
     "unexpected": "Произошла непредвиденная ошибка.",
     "runtime_config_invalid": "Не указан корректный адрес GitHub Releases API для Seamless Co-op.",
@@ -393,6 +418,7 @@
     "release_asset_name_unsafe": "Архив релиза имеет небезопасное имя файла.",
     "release_request_failed": "Не удалось получить данные последнего релиза Seamless Co-op.",
     "release_response_invalid": "GitHub Releases API вернул некорректный ответ.",
+    "update_version_invalid": "Не удалось сравнить установленную версию с последним релизом.",
     "download_failed": "Не удалось скачать архив.",
     "download_size_mismatch": "Размер загруженного архива не совпадает: ожидалось {expected}, получено {actual}.",
     "download_checksum_mismatch": "Не удалось подтвердить целостность загруженного архива.",

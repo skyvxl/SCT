@@ -29,7 +29,7 @@ class SettingsStoreTests(unittest.TestCase):
             self.assertEqual(settings, AppSettings())
             parser = configparser.ConfigParser(interpolation=None)
             parser.read(path, encoding="utf-8")
-            self.assertEqual(parser["Settings"]["preferred_language"], "ru")
+            self.assertEqual(parser["Settings"]["preferred_language"], "en")
             self.assertEqual(parser["Settings"]["save_file_type"], "ER0000.co2")
             self.assertEqual(parser["Settings"]["run_steam_silently"], "0")
             self.assertEqual(parser["Settings"]["fps_target"], "60")

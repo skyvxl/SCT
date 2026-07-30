@@ -6,6 +6,17 @@ import unittest
 from pathlib import Path
 
 from sct.localization import TranslationCatalogError, TranslationService
+from sct.resource_loader import resource_path
+
+
+def leaf_keys(value: object, prefix: str = "") -> set[str]:
+    if isinstance(value, dict):
+        return {
+            key
+            for name, child in value.items()
+            for key in leaf_keys(child, f"{prefix}.{name}" if prefix else name)
+        }
+    return {prefix}
 
 
 class TranslationServiceTests(unittest.TestCase):
@@ -16,7 +27,24 @@ class TranslationServiceTests(unittest.TestCase):
         self.assertEqual(service.translate("nav.home"), "Главная")
         self.assertEqual(service.translate("nav.seamless"), "Seamless Co-op")
         self.assertEqual(service.translate("nav.backups"), "Резервные копии")
-        self.assertEqual(service.available_locales(), ("ru",))
+        self.assertEqual(service.available_locales(), ("en", "ru"))
+
+    def test_packaged_english_catalog_matches_russian_keys(self) -> None:
+        root = resource_path("i18n")
+        english_path = root / "en.json"
+        self.assertTrue(english_path.is_file(), "Packaged English catalog is missing")
+        russian = json.loads((root / "ru.json").read_text(encoding="utf-8"))
+        english = json.loads(english_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(leaf_keys(english), leaf_keys(russian))
+
+        service = TranslationService(locale="en")
+        self.assertEqual(service.translate("nav.home"), "Home")
+        self.assertEqual(service.translate("settings.language.english"), "English")
+        self.assertEqual(
+            service.translate("backups.restore_success_message", name="backup.zip"),
+            'Backup "backup.zip" was restored successfully.',
+        )
 
     def test_formats_positional_and_named_values(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

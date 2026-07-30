@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from sct.errors import LocalizedError
@@ -22,6 +23,30 @@ class ReleaseAsset:
     download_url: str
     size: int | None = None
     sha256: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseInfo:
+    tag_name: str
+    html_url: str
+
+
+def parse_release_info(payload: Mapping[str, Any]) -> ReleaseInfo:
+    tag_name = payload.get("tag_name")
+    html_url = payload.get("html_url")
+    parsed_url = urlparse(str(html_url or ""))
+    if (
+            not isinstance(tag_name, str)
+            or not tag_name.strip()
+            or not isinstance(html_url, str)
+            or parsed_url.scheme not in {"http", "https"}
+            or not parsed_url.netloc
+    ):
+        raise ReleaseError(
+            "release_response_invalid",
+            "GitHub Releases API returned invalid release metadata",
+        )
+    return ReleaseInfo(tag_name=tag_name.strip(), html_url=html_url)
 
 
 def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
@@ -82,12 +107,18 @@ class GitHubReleaseClient:
     def __init__(self, *, timeout: float = 30.0) -> None:
         self.timeout = timeout
 
+    def latest_release(self, api_url: str) -> ReleaseInfo:
+        return parse_release_info(self._request_payload(api_url))
+
     def latest_asset(self, api_url: str) -> ReleaseAsset:
+        return select_release_asset(self._request_payload(api_url))
+
+    def _request_payload(self, api_url: str) -> Mapping[str, Any]:
         request = Request(
             api_url,
             headers={
                 "Accept": "application/vnd.github+json",
-                "User-Agent": "Seamless-Coop-Mod-Manager",
+                "User-Agent": "Seamless-Co-op-Toolkit",
                 "X-GitHub-Api-Version": "2022-11-28",
             },
         )
@@ -104,4 +135,4 @@ class GitHubReleaseClient:
                 "release_response_invalid",
                 "GitHub Releases API returned an invalid response",
             )
-        return select_release_asset(payload)
+        return payload

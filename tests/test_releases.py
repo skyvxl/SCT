@@ -2,10 +2,31 @@ from __future__ import annotations
 
 import unittest
 
-from sct.releases import ReleaseError, select_release_asset
+from sct.releases import ReleaseError, parse_release_info, select_release_asset
 
 
 class ReleaseSelectionTests(unittest.TestCase):
+    def test_parses_release_metadata_without_download_assets(self) -> None:
+        release = parse_release_info(
+            {
+                "tag_name": "v0.2.0",
+                "html_url": "https://github.com/skyvxl/SCT/releases/tag/v0.2.0",
+                "assets": [],
+            }
+        )
+
+        self.assertEqual(release.tag_name, "v0.2.0")
+        self.assertEqual(
+            release.html_url,
+            "https://github.com/skyvxl/SCT/releases/tag/v0.2.0",
+        )
+
+    def test_rejects_release_metadata_without_web_url(self) -> None:
+        with self.assertRaises(ReleaseError) as caught:
+            parse_release_info({"tag_name": "v0.2.0"})
+
+        self.assertEqual(caught.exception.code, "release_response_invalid")
+
     def test_selects_zip_and_reads_github_digest(self) -> None:
         asset = select_release_asset(
             {

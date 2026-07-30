@@ -17,12 +17,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from sct.component_versions import detect_ersc_version
 from sct.localization import TranslationService
 from sct.resource_loader import load_optional_icon
 from sct.settings import SettingsStore
 from sct.ui.dialogs.about import AboutDialog
 from sct.ui.dialogs.auto_setup import AutoSetupDialog, InstallerFactory
 from sct.ui.page_spec import PageSpec
+from sct.ui.update_controller import (
+    UpdateController,
+    UpdateServiceFactory,
+)
 from sct.ui.widgets.popups import SquarePopupMenu
 from sct.version import DISPLAY_VERSION
 
@@ -30,6 +35,10 @@ AboutFactory = Callable[[TranslationService, QWidget | None], QDialog]
 AutoSetupFactory = Callable[
     [TranslationService, SettingsStore, InstallerFactory, QWidget | None],
     QDialog,
+]
+UpdateControllerFactory = Callable[
+    [TranslationService, SettingsStore, UpdateServiceFactory, QWidget | None],
+    UpdateController,
 ]
 
 
@@ -40,9 +49,11 @@ class MainWindow(QMainWindow):
             pages: Sequence[PageSpec],
             settings_store: SettingsStore,
             installer_factory: InstallerFactory,
+            update_service_factory: UpdateServiceFactory,
             *,
             about_factory: AboutFactory = AboutDialog,
             auto_setup_factory: AutoSetupFactory = AutoSetupDialog,
+            update_controller_factory: UpdateControllerFactory = UpdateController,
     ) -> None:
         super().__init__()
         if len(pages) != 6:
@@ -51,8 +62,15 @@ class MainWindow(QMainWindow):
         self._pages = tuple(pages)
         self._settings_store = settings_store
         self._installer_factory = installer_factory
+        self._update_controller = update_controller_factory(
+            translator,
+            settings_store,
+            update_service_factory,
+            self,
+        )
         self._about_factory = about_factory
         self._auto_setup_factory = auto_setup_factory
+        self._ersc_version: str | None = None
         self.navigation_buttons: list[QPushButton] = []
         self.help_actions: list[QAction] = []
 
@@ -66,15 +84,21 @@ class MainWindow(QMainWindow):
         self.help_menu = SquarePopupMenu(self.menuBar())
         self.help_menu.setObjectName("helpMenu")
         self.menuBar().addMenu(self.help_menu)
-        for key in (
-                "menu.auto_setup",
+        action_callbacks = (
+            ("menu.auto_setup", self.show_auto_setup),
+            (
                 "menu.check_manager_updates",
+                lambda: self._update_controller.check_toolkit(self),
+            ),
+            (
                 "menu.check_mod_updates",
-                "menu.about",
-        ):
+                lambda: self._update_controller.check_ersc(self),
+            ),
+            ("menu.about", self.show_about),
+        )
+        for key, callback in action_callbacks:
             action = QAction(self)
             action.setProperty("translationKey", key)
-            callback = self.show_auto_setup if key == "menu.auto_setup" else self.show_about
             action.triggered.connect(
                 lambda _checked=False, handler=callback: handler()
             )
@@ -129,7 +153,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
 
         self.translator.language_changed.connect(lambda _locale: self.retranslate_ui())
+        self._update_controller.ersc_updated.connect(self.refresh_ersc_version)
+        self._update_controller.auto_setup_requested.connect(self.show_auto_setup)
         self.select_page(0)
+        self.refresh_ersc_version()
         self.retranslate_ui()
 
     def select_page(self, index: int) -> None:
@@ -155,7 +182,23 @@ class MainWindow(QMainWindow):
             dialog.installation_completed.connect(
                 settings_page.handle_installation_completed
             )
+        if hasattr(dialog, "installation_completed"):
+            dialog.installation_completed.connect(self.refresh_ersc_version)
         dialog.exec()
+
+    def refresh_ersc_version(self, _result: object | None = None) -> None:
+        game_directory = self._settings_store.load().mod_path
+        self._ersc_version = detect_ersc_version(game_directory)
+        if not hasattr(self, "mod_version_label"):
+            return
+        if self._ersc_version is None:
+            text = self.translator.translate("footer.mod_not_detected")
+        else:
+            text = self.translator.translate(
+                "footer.mod_version",
+                version=self._ersc_version,
+            )
+        self.mod_version_label.setText(text)
 
     def retranslate_ui(self) -> None:
         self.setWindowTitle(self.translator.translate("app.title"))
@@ -164,12 +207,13 @@ class MainWindow(QMainWindow):
             action.setText(self.translator.translate(action.property("translationKey")))
         for button, page in zip(self.navigation_buttons, self._pages, strict=True):
             button.setText(self.translator.translate(page.label_key))
-        self.mod_version_label.setText(self.translator.translate("footer.mod_not_detected"))
+        self.refresh_ersc_version()
         self.manager_version_label.setText(
             self.translator.translate("footer.manager_version", version=DISPLAY_VERSION)
         )
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        self._update_controller.shutdown()
         for page in self._pages:
             shutdown = getattr(page.widget, "shutdown", None)
             if callable(shutdown):

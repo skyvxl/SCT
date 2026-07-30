@@ -91,6 +91,14 @@ class SettingsPage(LocalizedPage):
             lambda text: self.language_combo.setItemText(0, text),
             "settings.language.russian",
         )
+        self.language_combo.addItem("", "en")
+        english_flag = load_optional_icon("flags", "en.png")
+        if english_flag is not None:
+            self.language_combo.setItemIcon(1, english_flag)
+        self.bind(
+            lambda text: self.language_combo.setItemText(1, text),
+            "settings.language.english",
+        )
         add_form_row(self, language_form, "settings.language.label", self.language_combo)
         layout.addWidget(language)
 
@@ -379,9 +387,7 @@ class SettingsPage(LocalizedPage):
         self._refresh_fps_state()
 
     def _connect_controls(self) -> None:
-        self.language_combo.currentIndexChanged.connect(
-            lambda _index: self._persist(preferred_language=str(self.language_combo.currentData()))
-        )
+        self.language_combo.currentIndexChanged.connect(self._change_language)
         self.browse_game_button.clicked.connect(self._browse_game_directory)
         self.game_path_edit.editingFinished.connect(self._save_game_directory)
         self.open_mod_folder_button.clicked.connect(self._open_mod_folder)
@@ -439,6 +445,14 @@ class SettingsPage(LocalizedPage):
                     **{name: serialize_key_sequence(sequence)}
                 )
             )
+
+    def _change_language(self, _index: int) -> None:
+        if self._loading_settings:
+            return
+        locale = str(self.language_combo.currentData())
+        if locale != self.translator.locale:
+            self.translator.set_locale(locale)
+        self._persist(preferred_language=locale)
 
     def _persist(self, **changes: object) -> None:
         if self._loading_settings:

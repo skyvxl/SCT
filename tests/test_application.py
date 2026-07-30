@@ -8,7 +8,7 @@ from unittest.mock import patch
 from sct.application import build_main_window, main
 from sct.game.runtime import GameSnapshot
 from sct.localization import TranslationCatalogError, TranslationService
-from sct.settings import SettingsStore
+from sct.settings import AppSettings, SettingsStore
 from sct.steam import SteamService
 from tests.qt_helpers import get_qapplication
 
@@ -68,12 +68,35 @@ class ApplicationTests(unittest.TestCase):
             critical: object,
             _logging: object,
     ) -> None:
+        _settings_store.return_value.ensure_exists.return_value = AppSettings()
         with self.assertLogs("sct.application", level="ERROR") as logs:
             result = main([])
         self.assertEqual(result, 1)
         critical.assert_called_once()
         self.assertNotIn("broken window", critical.call_args.args[2])
         self.assertTrue(any("Unable to build application window" in entry for entry in logs.output))
+
+    @patch("sct.application.configure_logging")
+    @patch("sct.application.get_application")
+    @patch("sct.application.SettingsStore")
+    @patch("sct.application.build_main_window")
+    def test_main_uses_saved_language(
+            self,
+            build_window: object,
+            settings_store: object,
+            application: object,
+            _logging: object,
+    ) -> None:
+        settings_store.return_value.ensure_exists.return_value = AppSettings(
+            preferred_language="en"
+        )
+        application.return_value.exec.return_value = 0
+
+        result = main([])
+
+        self.assertEqual(result, 0)
+        translator = build_window.call_args.args[0]
+        self.assertEqual(translator.locale, "en")
 
     def test_game_runtime_is_injected_and_closed_with_main_window(self) -> None:
         runtime = FakeGameRuntime()

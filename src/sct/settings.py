@@ -14,7 +14,7 @@ DIRECTORY_NAME = "SeamlessCoopToolkit"
 @dataclass(frozen=True, slots=True)
 class AppSettings:
     backup_method: int = 0
-    preferred_language: str = "ru"
+    preferred_language: str = "en"
     mod_path: str = ""
     game_exe_path: str = ""
     steam_exe_path: str = ""

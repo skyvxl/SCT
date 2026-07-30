@@ -549,6 +549,11 @@ QLabel[role="danger"] {
     color: #ff3030;
 }
 
+QLabel[role="warning"] {
+    color: #ffb020;
+    font-weight: 600;
+}
+
 QLabel[role="accent"] {
     color: #17adef;
     font-weight: 600;

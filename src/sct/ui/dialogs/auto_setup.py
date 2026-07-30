@@ -86,6 +86,12 @@ class AutoSetupDialog(QDialog):
         self.instructions.setWordWrap(True)
         root.addWidget(self.instructions)
 
+        self.github_nexus_warning = QLabel()
+        self.github_nexus_warning.setObjectName("autoSetupGithubNexusWarning")
+        self.github_nexus_warning.setProperty("role", "warning")
+        self.github_nexus_warning.setWordWrap(True)
+        root.addWidget(self.github_nexus_warning)
+
         self.game_path_label = QLabel()
         self.game_path_edit = QLineEdit()
         self.game_path_edit.setObjectName("autoSetupGamePathEdit")
@@ -127,6 +133,9 @@ class AutoSetupDialog(QDialog):
     def retranslate_ui(self) -> None:
         self.setWindowTitle(self.translator.translate("auto_setup.title"))
         self.instructions.setText(self.translator.translate("auto_setup.instructions"))
+        self.github_nexus_warning.setText(
+            self.translator.translate("auto_setup.github_nexus_warning")
+        )
         self.game_path_label.setText(self.translator.translate("auto_setup.game_path"))
         self.game_path_edit.setPlaceholderText(
             self.translator.translate("auto_setup.game_path_placeholder")

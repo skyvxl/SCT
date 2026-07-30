@@ -8,9 +8,10 @@ from pathlib import Path
 
 from sct.downloads import download_file, safe_extract_zip
 from sct.errors import LocalizedError
+from sct.ersc_settings import ErscSettingsStore
 from sct.installer_settings import merge_ersc_settings
 from sct.modengine import ModEngineConfig
-from sct.releases import GitHubReleaseClient
+from sct.releases import GitHubReleaseClient, ReleaseAsset
 from sct.runtime_config import RuntimeConfig
 
 MODENGINE2_URL = (
@@ -257,6 +258,95 @@ class ModInstaller:
                             "installer_rollback_failed",
                             f"Installation rollback failed: {rollback_error}",
                         ) from error
+                    transaction = None
+                    raise
+        except Exception as error:
+            if transaction is not None:
+                try:
+                    transaction.rollback()
+                except OSError as rollback_error:
+                    raise InstallerError(
+                        "installer_rollback_failed",
+                        f"Installation rollback failed: {rollback_error}",
+                    ) from error
+            if isinstance(error, InstallerError):
+                raise
+            if isinstance(error, LocalizedError):
+                raise InstallerError(
+                    error.code,
+                    f"Installation failed: {error}",
+                    params=error.params,
+                ) from error
+            raise InstallerError(
+                "installer_unexpected",
+                f"Unexpected installation failure: {error}",
+            ) from error
+
+    def update_ersc(
+            self,
+            game_directory: Path | str,
+            release: ReleaseAsset,
+            *,
+            progress: ProgressCallback | None = None,
+    ) -> InstallResult:
+        game = Path(game_directory).expanduser().resolve()
+        if not (game / "eldenring.exe").is_file():
+            raise InstallerError(
+                "installer_game_exe_missing",
+                f"eldenring.exe is missing from the selected directory: {game}",
+            )
+
+        def emit(phase: str, percent: int) -> None:
+            if progress is not None:
+                progress(phase, max(0, min(percent, 100)))
+
+        transaction: FileTransaction | None = None
+        try:
+            with tempfile.TemporaryDirectory(prefix="sct-ersc-update-") as temporary:
+                workspace = Path(temporary)
+                archive = workspace / release.name
+                emit("download_ersc", 0)
+                download_file(
+                    release.download_url,
+                    archive,
+                    expected_digest=release.sha256,
+                    expected_size=release.size,
+                    progress=self._download_progress(emit, "download_ersc", 0, 65),
+                )
+                emit("extract", 68)
+                extracted = safe_extract_zip(archive, workspace / "ersc")
+                self._validate_ersc_staging(extracted)
+
+                staged_settings = extracted / "SeamlessCoop" / "ersc_settings.ini"
+                existing_settings = game / "SeamlessCoop" / "ersc_settings.ini"
+                password = ErscSettingsStore(existing_settings).load().cooppassword
+                merge_ersc_settings(
+                    staged_settings,
+                    existing_settings if existing_settings.is_file() else None,
+                    staged_settings,
+                    password,
+                )
+
+                transaction = FileTransaction(game, workspace / "rollback")
+                try:
+                    emit("install", 76)
+                    transaction.copy_file(
+                        extracted / "ersc_launcher.exe",
+                        game / "ersc_launcher.exe",
+                    )
+                    transaction.copy_tree(
+                        extracted / "SeamlessCoop",
+                        game / "SeamlessCoop",
+                    )
+                    emit("complete", 100)
+                    return InstallResult(
+                        ersc_version=release.tag_name,
+                        game_directory=game,
+                        launcher_path=game / "ersc_launcher.exe",
+                        mod_directory=game / "mod",
+                    )
+                except Exception:
+                    transaction.rollback()
                     transaction = None
                     raise
         except Exception as error:

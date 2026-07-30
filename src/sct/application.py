@@ -18,6 +18,7 @@ from sct.settings import SettingsStore
 from sct.steam import SteamService
 from sct.ui.main_window import MainWindow
 from sct.ui.pages import build_page_specs
+from sct.updates import UpdateService
 
 LOGGER = logging.getLogger("sct.application")
 
@@ -60,6 +61,7 @@ def build_main_window(
         ),
         settings_store,
         lambda: ModInstaller(RuntimeConfig.load()),
+        lambda: UpdateService(RuntimeConfig.load()),
     )
     if screenshot_capture is not None:
         screenshot_capture.setParent(window)
@@ -82,8 +84,18 @@ def main(arguments: Sequence[str] | None = None) -> int:
     try:
         application.setStyleSheet(load_stylesheet())
         settings_store = SettingsStore()
-        settings_store.ensure_exists()
+        settings = settings_store.ensure_exists()
+        if settings.preferred_language != translator.locale:
+            translator.set_locale(settings.preferred_language)
         window = build_main_window(translator, settings_store, SteamService())
+    except TranslationCatalogError:
+        LOGGER.exception("Unable to initialize localization")
+        QMessageBox.critical(
+            None,
+            "Localization error",
+            "Unable to load localization resources.",
+        )
+        return 1
     except Exception:
         LOGGER.exception("Unable to build application window")
         QMessageBox.critical(

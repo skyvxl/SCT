@@ -55,6 +55,21 @@ class AutoSetupDialogTests(unittest.TestCase):
             self.assertEqual(persisted.game_exe_path, str(game / "ersc_launcher.exe"))
             self.assertEqual(completed, [result])
 
+    def test_shows_github_mirror_warning_before_installation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            settings = SettingsStore(root / "settings.ini")
+            settings.ensure_exists()
+            dialog = AutoSetupDialog(
+                TranslationService(locale="en"),
+                settings,
+                installer_factory=lambda: object(),
+            )
+
+            self.assertTrue(dialog.github_nexus_warning.isVisibleTo(dialog))
+            self.assertIn("GitHub", dialog.github_nexus_warning.text())
+            self.assertIn("Nexus", dialog.github_nexus_warning.text())
+
     def test_success_waits_for_worker_thread_before_closing_dialog(self) -> None:
         class RunningThread:
             @staticmethod

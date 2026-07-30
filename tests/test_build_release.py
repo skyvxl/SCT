@@ -20,6 +20,15 @@ from tools.build_release import (
 
 
 class ReleaseBuildTests(unittest.TestCase):
+    def test_release_layout_uses_stable_toolkit_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            layout = ReleaseLayout.from_project(temporary_directory)
+
+        self.assertEqual(
+            layout.release_name,
+            "Seamless-Co-op-Toolkit-0.2.0-win64",
+        )
+
     def test_validate_items_reports_all_missing_release_files(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             items = Path(temporary_directory)
@@ -113,7 +122,7 @@ class ReleaseBuildTests(unittest.TestCase):
     def test_release_zip_contains_one_versioned_root_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
-            release_dir = root / "Seamless-Co-op-Toolkit-0.1.0-dev-win64"
+            release_dir = root / "Seamless-Co-op-Toolkit-0.2.0-win64"
             release_dir.mkdir()
             (release_dir / "Seamless Co-op Toolkit.exe").write_bytes(b"exe")
             destination = root / f"{release_dir.name}.zip"
@@ -125,7 +134,7 @@ class ReleaseBuildTests(unittest.TestCase):
                 self.assertEqual(
                     release_zip.namelist(),
                     [
-                        "Seamless-Co-op-Toolkit-0.1.0-dev-win64/"
+                        "Seamless-Co-op-Toolkit-0.2.0-win64/"
                         "Seamless Co-op Toolkit.exe"
                     ],
                 )

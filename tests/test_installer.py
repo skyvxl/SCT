@@ -51,6 +51,62 @@ def write_ersc_archive(path: Path) -> None:
 
 
 class ModInstallerTests(unittest.TestCase):
+    def test_updates_only_ersc_and_preserves_existing_settings_and_user_mods(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_text("game")
+            (game / "ersc_launcher.exe").write_text("old launcher")
+            (game / "mod").mkdir()
+            (game / "mod" / "user-mod.txt").write_text("keep")
+            config = game / "config_eldenring.toml"
+            config.write_text(
+                "[modengine]\n"
+                'external_dlls = ["SeamlessCoop\\\\ersc.dll"]\n'
+                "# preserve me\n",
+                encoding="utf-8",
+            )
+            settings = game / "SeamlessCoop" / "ersc_settings.ini"
+            settings.parent.mkdir()
+            settings.write_text(
+                "[GAMEPLAY]\n"
+                "allow_invaders = 0\n"
+                "[PASSWORD]\n"
+                "cooppassword = existing-password\n",
+                encoding="utf-8",
+            )
+            (settings.parent / "ersc.dll").write_text("old dll")
+            ersc_archive = root / "ersc-update.zip"
+            write_ersc_archive(ersc_archive)
+            release = ReleaseAsset(
+                tag_name="v1.9.9",
+                name=ersc_archive.name,
+                download_url=ersc_archive.as_uri(),
+                size=ersc_archive.stat().st_size,
+                sha256=hashlib.sha256(ersc_archive.read_bytes()).hexdigest(),
+            )
+            installer = ModInstaller(
+                RuntimeConfig("https://example.invalid/latest"),
+            )
+
+            result = installer.update_ersc(game, release)
+
+            self.assertEqual(result.ersc_version, "v1.9.9")
+            self.assertEqual((game / "ersc_launcher.exe").read_text(), "ersc launcher")
+            self.assertEqual((settings.parent / "ersc.dll").read_text(), "ersc")
+            updated_settings = settings.read_text(encoding="utf-8")
+            self.assertIn("allow_invaders = 0", updated_settings)
+            self.assertIn("new_option = 9", updated_settings)
+            self.assertIn("cooppassword = existing-password", updated_settings)
+            self.assertEqual((game / "mod" / "user-mod.txt").read_text(), "keep")
+            self.assertEqual(
+                config.read_text(encoding="utf-8"),
+                "[modengine]\n"
+                'external_dlls = ["SeamlessCoop\\\\ersc.dll"]\n'
+                "# preserve me\n",
+            )
+
     def test_installs_selected_files_and_preserves_user_content(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
