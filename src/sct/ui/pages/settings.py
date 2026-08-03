@@ -763,13 +763,18 @@ class SettingsPage(LocalizedPage):
         game_directory = self.game_path_edit.text().strip()
         patcher = EldenRingFpsPatcher(game_directory) if game_directory else None
         backup_exists = patcher is not None and patcher.backup_exists()
-        current_fps = self.settings_store.load().fps_target if backup_exists else 60
-        self.current_fps_label.setText(
-            self.translator.translate(
-                "settings.fps.current",
-                value=f"{current_fps:.1f}",
-            )
-        )
+        current_fps_text = self.translator.translate("settings.fps.current_unknown")
+        if patcher is not None and patcher.executable_path.is_file():
+            try:
+                current_fps = patcher.current_fps()
+            except (LocalizedError, OSError):
+                LOGGER.debug("Unable to read FPS from Elden Ring executable", exc_info=True)
+            else:
+                current_fps_text = self.translator.translate(
+                    "settings.fps.current",
+                    value=f"{current_fps:.1f}",
+                )
+        self.current_fps_label.setText(current_fps_text)
         executable_exists = patcher is not None and (
                 patcher.executable_path.is_file() or patcher.backup_exists()
         )

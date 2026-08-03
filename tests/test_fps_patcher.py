@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import struct
 import tempfile
 import unittest
 from pathlib import Path
@@ -50,6 +51,47 @@ class EldenRingFpsPatcherTests(unittest.TestCase):
                 executable.read_bytes(),
                 expected_patched_bytes(bytes.fromhex("39 8E E3 3B")),
             )
+
+    def test_current_fps_reads_original_executable_value(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            game_directory = Path(directory)
+            (game_directory / "eldenring.exe").write_bytes(executable_bytes())
+
+            current_fps = self.patcher_type()(game_directory).current_fps()
+
+            self.assertAlmostEqual(current_fps, 60.0, places=3)
+
+    def test_current_fps_reads_active_patched_executable_value(self) -> None:
+        for target_fps in (144, 240):
+            with self.subTest(target_fps=target_fps), tempfile.TemporaryDirectory() as directory:
+                game_directory = Path(directory)
+                (game_directory / "eldenring.exe").write_bytes(executable_bytes())
+                patcher = self.patcher_type()(game_directory)
+                patcher.patch(target_fps)
+
+                current_fps = patcher.current_fps()
+
+                self.assertAlmostEqual(current_fps, float(target_fps), places=3)
+
+    def test_current_fps_rejects_invalid_frame_time(self) -> None:
+        for frame_time in (0.0, -1.0, float("inf"), float("nan")):
+            with self.subTest(frame_time=frame_time), tempfile.TemporaryDirectory() as directory:
+                game_directory = Path(directory)
+                executable = game_directory / "eldenring.exe"
+                executable.write_bytes(executable_bytes())
+                patcher = self.patcher_type()(game_directory)
+                patcher.patch(144)
+                changed = bytearray(executable.read_bytes())
+                changed[FPS_VALUE_OFFSET: FPS_VALUE_OFFSET + 4] = struct.pack(
+                    "<f",
+                    frame_time,
+                )
+                executable.write_bytes(changed)
+
+                with self.assertRaises(LocalizedError) as raised:
+                    patcher.current_fps()
+
+                self.assertEqual(raised.exception.code, "fps_value_invalid")
 
     def test_repeat_patch_is_rebuilt_from_unchanged_original_backup(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

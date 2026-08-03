@@ -351,6 +351,7 @@
     "fps": {
       "title": "FPS Unlock",
       "current": "Current FPS: {value}",
+      "current_unknown": "Current FPS: Not detected",
       "target": "Target FPS:",
       "apply": "Apply FPS Value",
       "restore": "Restore Original eldenring.exe",

@@ -351,6 +351,7 @@
     "fps": {
       "title": "Разблокировка FPS",
       "current": "Текущий FPS: {value}",
+      "current_unknown": "Текущий FPS: Не определён",
       "target": "Значение FPS:",
       "apply": "Применить значение FPS",
       "restore": "Восстановить оригинал eldenring.exe",

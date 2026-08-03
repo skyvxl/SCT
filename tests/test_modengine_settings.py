@@ -4,12 +4,21 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from sct.fps_patcher import EldenRingFpsPatcher
 from sct.localization import TranslationService
 from sct.mod_loaders import LoaderKind, ModLoaderManager
 from sct.modengine import ModEngineConfig
 from sct.settings import SettingsStore
 from sct.ui.pages.settings import SettingsPage
 from tests.qt_helpers import get_qapplication
+
+ORIGINAL_FPS_SIGNATURE = bytes.fromhex(
+    "C7 43 1C 89 88 88 3C EB 6D 89 73 18 EB C7 89 73 18"
+)
+
+
+def supported_executable_bytes() -> bytes:
+    return b"MZ" + (b"\x00" * 16) + ORIGINAL_FPS_SIGNATURE + (b"\xFF" * 32)
 
 
 class FakeSteamService:
@@ -111,6 +120,45 @@ class ModEngineSettingsTests(unittest.TestCase):
             )
 
             self.assertEqual(store.load().default_mod_loader, "me3")
+
+    def test_current_fps_comes_from_active_executable_not_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_bytes(supported_executable_bytes())
+            EldenRingFpsPatcher(game).patch(144)
+            store = SettingsStore(root / "settings.ini")
+            store.ensure_exists()
+            store.update(mod_path=str(game), fps_target=240)
+            translator = TranslationService()
+
+            page = SettingsPage(translator, store, FakeSteamService())
+            page.steam_status_timer.stop()
+
+            self.assertEqual(
+                page.current_fps_label.text(),
+                translator.translate("settings.fps.current", value="144.0"),
+            )
+
+    def test_unsupported_executable_displays_unknown_current_fps(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_bytes(b"MZ unsupported")
+            store = SettingsStore(root / "settings.ini")
+            store.ensure_exists()
+            store.update(mod_path=str(game), fps_target=240)
+            translator = TranslationService()
+
+            page = SettingsPage(translator, store, FakeSteamService())
+            page.steam_status_timer.stop()
+
+            self.assertEqual(
+                page.current_fps_label.text(),
+                translator.translate("settings.fps.current_unknown"),
+            )
 
 
 if __name__ == "__main__":

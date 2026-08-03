@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import os
 import shutil
 import struct
@@ -31,6 +32,28 @@ class EldenRingFpsPatcher:
 
     def backup_exists(self) -> bool:
         return self.backup_path.is_file()
+
+    def current_fps(self) -> float:
+        if not self.executable_path.is_file():
+            raise LocalizedError(
+                "fps_executable_missing",
+                f"Elden Ring executable not found: {self.executable_path}",
+                params={"path": self.executable_path},
+            )
+
+        active = self.executable_path.read_bytes()
+        reference = self.backup_path.read_bytes() if self.backup_exists() else active
+        value_offset = self._find_value_offset(reference)
+        if self.backup_exists():
+            self._validate_current_matches_backup(reference, value_offset)
+
+        frame_time = struct.unpack_from("<f", active, value_offset)[0]
+        if not math.isfinite(frame_time) or frame_time <= 0:
+            raise LocalizedError(
+                "fps_value_invalid",
+                "The encoded Elden Ring frame time is not a finite positive value",
+            )
+        return 1 / frame_time
 
     def patch(self, target_fps: int) -> FpsPatchResult:
         if not isinstance(target_fps, int) or isinstance(target_fps, bool) or not 1 <= target_fps <= 1000:
