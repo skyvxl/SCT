@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QUrl, Signal, Slot
@@ -28,13 +29,15 @@ from PySide6.QtWidgets import (
 
 from sct.errors import LocalizedError, localized_error_message
 from sct.fps_patcher import EldenRingFpsPatcher
-from sct.installer import InstallResult
+from sct.installer import InstallResult, ModInstaller
 from sct.localization import TranslationService
+from sct.mod_loaders import LoaderKind, ModLoaderManager
 from sct.modengine import ModEngineConfig, ModEngineConfigError
 from sct.resource_loader import load_optional_icon, optional_resource_path
 from sct.settings import AppSettings, SettingsStore
 from sct.shortcuts import deserialize_key_sequence, serialize_key_sequence
 from sct.steam import SteamService
+from sct.ui.dialogs.loader_manager import LoaderManagerDialog
 from sct.ui.pages.base import LocalizedPage
 from sct.ui.widgets import CompactComboBox
 from sct.ui.widgets.forms import action_button, add_form_row, section
@@ -67,10 +70,14 @@ class SettingsPage(LocalizedPage):
             translator: TranslationService,
             settings_store: SettingsStore,
             steam_service: SteamService,
+            loader_manager: ModLoaderManager | None = None,
+            installer_factory: Callable[[], ModInstaller] | None = None,
     ) -> None:
         super().__init__(translator)
         self.settings_store = settings_store
         self.steam_service = steam_service
+        self.loader_manager = loader_manager or ModLoaderManager()
+        self.installer_factory = installer_factory
         self._loading_settings = True
         root = QVBoxLayout(self)
         self.scroll = QScrollArea()
@@ -180,6 +187,43 @@ class SettingsPage(LocalizedPage):
         modengine_layout = QVBoxLayout(modengine)
         modengine_layout.setContentsMargins(16, 18, 16, 18)
         modengine_layout.setSpacing(12)
+
+        loader_row = QWidget()
+        loader_row_layout = QHBoxLayout(loader_row)
+        loader_row_layout.setContentsMargins(0, 0, 0, 0)
+        self.default_loader_label = QLabel()
+        self.bind(self.default_loader_label.setText, "settings.modengine.default_loader")
+        loader_row_layout.addWidget(self.default_loader_label)
+        self.default_loader_combo = CompactComboBox()
+        self.default_loader_combo.setObjectName("defaultModLoaderCombo")
+        self.default_loader_combo.addItem("", "")
+        self.default_loader_combo.addItem("", LoaderKind.MODENGINE3.value)
+        self.default_loader_combo.addItem("", LoaderKind.MODENGINE2.value)
+        self.bind(
+            lambda text: self.default_loader_combo.setItemText(0, text),
+            "settings.modengine.ask_when_needed",
+        )
+        self.bind(
+            lambda text: self.default_loader_combo.setItemText(1, text),
+            "loader.me3_recommended",
+        )
+        self.bind(
+            lambda text: self.default_loader_combo.setItemText(2, text),
+            "loader.me2_legacy",
+        )
+        loader_row_layout.addWidget(self.default_loader_combo, 1)
+        self.manage_loaders_button = action_button(
+            self,
+            "settings.modengine.manage_loaders",
+            "manageModLoadersButton",
+        )
+        self.manage_loaders_button.setEnabled(installer_factory is not None)
+        loader_row_layout.addWidget(self.manage_loaders_button)
+        modengine_layout.addWidget(loader_row)
+
+        self.loader_status_label = QLabel()
+        self.loader_status_label.setWordWrap(True)
+        modengine_layout.addWidget(self.loader_status_label)
 
         manager_card = QFrame()
         manager_card.setObjectName("modEngineManagerCard")
@@ -355,6 +399,9 @@ class SettingsPage(LocalizedPage):
         self.launcher_auto_update.setChecked(settings.auto_check_updates)
         self.steam_edit.setText(settings.steam_exe_path)
         self.silent_steam.setChecked(settings.run_steam_silently)
+        self.default_loader_combo.setCurrentIndex(
+            max(self.default_loader_combo.findData(settings.default_mod_loader), 0)
+        )
         self.fps_target.setValue(settings.fps_target)
         self.backup_format.setCurrentIndex(
             max(
@@ -386,11 +433,22 @@ class SettingsPage(LocalizedPage):
         self.refresh_modengine()
         self._refresh_fps_state()
 
+    def retranslate_ui(self) -> None:
+        super().retranslate_ui()
+        if hasattr(self, "game_path_edit"):
+            self.refresh_modengine()
+
     def _connect_controls(self) -> None:
         self.language_combo.currentIndexChanged.connect(self._change_language)
         self.browse_game_button.clicked.connect(self._browse_game_directory)
         self.game_path_edit.editingFinished.connect(self._save_game_directory)
         self.open_mod_folder_button.clicked.connect(self._open_mod_folder)
+        self.default_loader_combo.currentIndexChanged.connect(
+            lambda _index: self._persist(
+                default_mod_loader=str(self.default_loader_combo.currentData() or "")
+            )
+        )
+        self.manage_loaders_button.clicked.connect(self._show_loader_manager)
         self.browse_launcher_button.clicked.connect(self._browse_launcher)
         self.launcher_edit.editingFinished.connect(
             lambda: self._persist(game_exe_path=self.launcher_edit.text().strip())
@@ -501,6 +559,7 @@ class SettingsPage(LocalizedPage):
     def refresh_modengine(self) -> None:
         game_text = self.game_path_edit.text().strip()
         game_directory = Path(game_text) if game_text else None
+        self._refresh_loader_status(game_directory)
         mod_directory = game_directory / "mod" if game_directory is not None else None
         self.open_mod_folder_button.setEnabled(
             mod_directory is not None and mod_directory.is_dir()
@@ -519,23 +578,101 @@ class SettingsPage(LocalizedPage):
                 config.ensure_ersc()
                 dlls = config.list_dlls()
         except (OSError, ModEngineConfigError):
-            LOGGER.exception("Unable to read ModEngine configuration")
+            me3_installed = self.loader_manager.state(
+                game_directory,
+                LoaderKind.MODENGINE3,
+            ).installed
+            if me3_installed and (game_directory / "SeamlessCoop" / "ersc.dll").is_file():
+                self._add_modengine_badge("ersc.dll", active=True, locked=True)
+                self.modengine_badges_layout.addStretch(1)
+                return
+            LOGGER.debug("ModEngine2 configuration is not available")
             return
+        if (
+                not dlls
+                and self.loader_manager.state(
+            game_directory,
+            LoaderKind.MODENGINE3,
+        ).installed
+                and (game_directory / "SeamlessCoop" / "ersc.dll").is_file()
+        ):
+            self._add_modengine_badge("ersc.dll", active=True, locked=True)
         for dll in dlls:
-            badge = QPushButton(Path(dll.path).name)
-            badge.setObjectName("modEngineDllBadge")
-            badge.setProperty("active", dll.enabled)
-            badge.setProperty("locked", dll.locked)
-            badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            if not dll.locked:
-                badge.clicked.connect(
-                    lambda _checked=False, path=dll.path, enabled=dll.enabled: (
-                        self._toggle_modengine_dll(path, not enabled)
-                    )
-                )
-            self.modengine_badges_layout.addWidget(badge)
-            self.modengine_badges.append(badge)
+            self._add_modengine_badge(
+                Path(dll.path).name,
+                active=dll.enabled,
+                locked=dll.locked,
+                path=dll.path,
+            )
         self.modengine_badges_layout.addStretch(1)
+
+    def _add_modengine_badge(
+            self,
+            name: str,
+            *,
+            active: bool,
+            locked: bool,
+            path: str | None = None,
+    ) -> None:
+        badge = QPushButton(name)
+        badge.setObjectName("modEngineDllBadge")
+        badge.setProperty("active", active)
+        badge.setProperty("locked", locked)
+        badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if not locked and path is not None:
+            badge.clicked.connect(
+                lambda _checked=False, dll_path=path, enabled=active: (
+                    self._toggle_modengine_dll(dll_path, not enabled)
+                )
+            )
+        self.modengine_badges_layout.addWidget(badge)
+        self.modengine_badges.append(badge)
+
+    def _refresh_loader_status(self, game_directory: Path | None) -> None:
+        if game_directory is None:
+            self.loader_status_label.setText(
+                self.translator.translate("settings.modengine.no_game_path")
+            )
+            return
+        me3 = self.loader_manager.state(game_directory, LoaderKind.MODENGINE3)
+        me2 = self.loader_manager.state(game_directory, LoaderKind.MODENGINE2)
+        self.loader_status_label.setText(
+            self.translator.translate(
+                "settings.modengine.loader_status",
+                me3=self._loader_state_text(me3.installed, me3.version),
+                me2=self._loader_state_text(me2.installed, me2.version),
+            )
+        )
+
+    def _loader_state_text(self, installed: bool, version: str | None) -> str:
+        if not installed:
+            return self.translator.translate("settings.modengine.not_installed")
+        return self.translator.translate(
+            "settings.modengine.installed",
+            version=version or self.translator.translate("settings.modengine.unknown_version"),
+        )
+
+    def _show_loader_manager(self) -> None:
+        if self.installer_factory is None:
+            return
+        dialog = LoaderManagerDialog(
+            self.translator,
+            self.settings_store,
+            self.installer_factory,
+            self.loader_manager,
+            self,
+        )
+        dialog.loaders_changed.connect(self.handle_loaders_changed)
+        dialog.exec()
+
+    def handle_loaders_changed(self) -> None:
+        settings = self.settings_store.load()
+        self.default_loader_combo.blockSignals(True)
+        self.default_loader_combo.setCurrentIndex(
+            max(self.default_loader_combo.findData(settings.default_mod_loader), 0)
+        )
+        self.default_loader_combo.blockSignals(False)
+        self.refresh_modengine()
 
     def _toggle_modengine_dll(self, path: str, enabled: bool) -> None:
         game_text = self.game_path_edit.text().strip()
@@ -564,6 +701,7 @@ class SettingsPage(LocalizedPage):
     def handle_installation_completed(self, result: InstallResult) -> None:
         self.game_path_edit.setText(str(result.game_directory))
         self.launcher_edit.setText(str(result.launcher_path))
+        self.handle_loaders_changed()
         self.refresh_modengine()
         self._refresh_fps_state()
         self.game_directory_changed.emit(str(result.game_directory))

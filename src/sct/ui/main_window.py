@@ -19,10 +19,12 @@ from PySide6.QtWidgets import (
 
 from sct.component_versions import detect_ersc_version
 from sct.localization import TranslationService
+from sct.mod_loaders import ModLoaderManager
 from sct.resource_loader import load_optional_icon
 from sct.settings import SettingsStore
 from sct.ui.dialogs.about import AboutDialog
 from sct.ui.dialogs.auto_setup import AutoSetupDialog, InstallerFactory
+from sct.ui.dialogs.loader_manager import LoaderManagerDialog
 from sct.ui.page_spec import PageSpec
 from sct.ui.update_controller import (
     UpdateController,
@@ -54,6 +56,7 @@ class MainWindow(QMainWindow):
             about_factory: AboutFactory = AboutDialog,
             auto_setup_factory: AutoSetupFactory = AutoSetupDialog,
             update_controller_factory: UpdateControllerFactory = UpdateController,
+            loader_manager: ModLoaderManager | None = None,
     ) -> None:
         super().__init__()
         if len(pages) != 6:
@@ -62,6 +65,7 @@ class MainWindow(QMainWindow):
         self._pages = tuple(pages)
         self._settings_store = settings_store
         self._installer_factory = installer_factory
+        self._loader_manager = loader_manager or ModLoaderManager()
         self._update_controller = update_controller_factory(
             translator,
             settings_store,
@@ -94,6 +98,7 @@ class MainWindow(QMainWindow):
                 "menu.check_mod_updates",
                 lambda: self._update_controller.check_ersc(self),
             ),
+            ("menu.manage_loaders", self.show_loader_manager),
             ("menu.about", self.show_about),
         )
         for key, callback in action_callbacks:
@@ -184,6 +189,19 @@ class MainWindow(QMainWindow):
             )
         if hasattr(dialog, "installation_completed"):
             dialog.installation_completed.connect(self.refresh_ersc_version)
+        dialog.exec()
+
+    def show_loader_manager(self) -> None:
+        dialog = LoaderManagerDialog(
+            self.translator,
+            self._settings_store,
+            self._installer_factory,
+            self._loader_manager,
+            self,
+        )
+        settings_page = self._pages[-1].widget
+        if hasattr(settings_page, "handle_loaders_changed"):
+            dialog.loaders_changed.connect(settings_page.handle_loaders_changed)
         dialog.exec()
 
     def refresh_ersc_version(self, _result: object | None = None) -> None:

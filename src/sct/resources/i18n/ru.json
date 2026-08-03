@@ -16,6 +16,7 @@
     "auto_setup": "Автоматическая установка Elden Ring Seamless Co-op и ModEngine",
     "check_manager_updates": "Проверить наличие обновления менеджера мода",
     "check_mod_updates": "Проверить наличие обновления Elden Ring Seamless Co-op",
+    "manage_loaders": "Установить или настроить загрузчики модов",
     "about": "О программе"
   },
   "footer": {
@@ -33,8 +34,17 @@
     "save": "Сохранить",
     "ok": "ОК",
     "cancel": "Отмена",
+    "close": "Закрыть",
     "yes": "Да",
     "no": "Нет"
+  },
+  "loader": {
+    "me3_recommended": "ModEngine 3 (Рекомендуется)",
+    "me2_legacy": "ModEngine 2 (Legacy)"
+  },
+  "loader_choice": {
+    "title": "Выбор загрузчика модов",
+    "description": "Установлены ModEngine 3 и ModEngine 2. Выберите загрузчик для этого запуска. Загрузчик по умолчанию можно назначить в настройках менеджера."
   },
   "about": {
     "product_name": "Seamless Co-op Toolkit",
@@ -325,6 +335,14 @@
     },
     "modengine": {
       "title": "ModEngine",
+      "default_loader": "Загрузчик по умолчанию:",
+      "ask_when_needed": "Спрашивать, если установлены оба загрузчика",
+      "manage_loaders": "Установить / удалить",
+      "no_game_path": "Укажите папку Elden Ring для управления загрузчиками.",
+      "loader_status": "ModEngine 3: {me3}    •    ModEngine 2: {me2}",
+      "installed": "Установлен ({version})",
+      "not_installed": "Не установлен",
+      "unknown_version": "версия неизвестна",
       "manager": "ModEngine DLL Manager",
       "description": "Управляйте своими библиотеками DLL. ersc.dll нельзя отключить.",
       "error_title": "Ошибка ModEngine",
@@ -366,6 +384,8 @@
     "title": "Автоматическая установка Seamless Co-op и ModEngine",
     "instructions": "Этот мастер установщик поможет вам настроить Seamless Co-op с ModEngine.\n\n1. Выберите папку с игрой Elden Ring\n2. Установите свой пароль для участия в кооперативе\n3. Мастер установщик автоматически:\n   - Скачает и установит ModEngine\n   - Скачает и установит Seamless Co-op\n   - Настроит все необходимые файлы\n   - Сохранит ваши настройки",
     "github_nexus_warning": "Важно: версия в зеркале GitHub может быть старее актуальной версии на Nexus Mods. Если Seamless Co-op не запускается, установите последнюю версию с Nexus Mods вручную.",
+    "loader": "Загрузчик модов:",
+    "me2_legacy_warning": "ModEngine 2 устарел и больше не поддерживается. Устанавливайте его только для модов, которым явно нужен ME2, если вы понимаете ограничения совместимости.",
     "game_path": "Путь к папке с игрой:",
     "game_path_placeholder": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\ELDEN RING\\Game",
     "password": "Пароль для кооператива:",
@@ -375,18 +395,36 @@
     "invalid_game_path": "В выбранной папке не найден eldenring.exe.",
     "password_required": "Введите пароль для кооператива.",
     "success_title": "Установка завершена",
-    "success_message": "ModEngine2 и Seamless Co-op {version} успешно установлены.",
+    "success_message": "Выбранный загрузчик ModEngine и Seamless Co-op {version} успешно установлены.",
     "error_title": "Ошибка установки",
     "error_message": "Не удалось завершить установку.\n\n{message}",
     "phases": {
       "release": "Проверка последнего релиза Seamless Co-op…",
-      "download_modengine": "Загрузка ModEngine2…",
+      "download_modengine": "Загрузка ModEngine…",
       "download_ersc": "Загрузка Seamless Co-op…",
       "extract": "Проверка и распаковка архивов…",
       "install": "Установка файлов…",
       "configure": "Настройка ModEngine и Seamless Co-op…",
       "complete": "Установка завершена."
     }
+  },
+  "loader_manager": {
+    "title": "Управление загрузчиками модов",
+    "description": "ModEngine 3 — рекомендуемый загрузчик. ModEngine 2 сохранён только для старых модов, которым он необходим. Одновременно загрузчики не запускаются.",
+    "game_path": "Папка Elden Ring: {path}",
+    "me2_warning": "Legacy-предупреждение: ModEngine 2 устарел. Удаление загрузчика не удаляет Seamless Co-op, папку mod и конфигурацию ModEngine.",
+    "status": "{name}: {state}",
+    "installed": "Установлен ({version})",
+    "not_installed": "Не установлен",
+    "unknown_version": "версия неизвестна",
+    "install": "Установить",
+    "reinstall": "Переустановить",
+    "remove": "Удалить",
+    "remove_title": "Удаление загрузчика модов",
+    "remove_message": "Удалить {name}? Seamless Co-op и пользовательские моды останутся на месте.",
+    "success_title": "Загрузчик установлен",
+    "success_message": "{name} успешно установлен.",
+    "error_title": "Ошибка загрузчика модов"
   },
   "updates": {
     "error_title": "Ошибка обновления",
@@ -416,6 +454,7 @@
     "release_zip_missing": "В последнем релизе Seamless Co-op не найден ZIP-архив.",
     "release_zip_ambiguous": "Не удалось однозначно выбрать ZIP-архив Seamless Co-op.",
     "release_asset_name_unsafe": "Архив релиза имеет небезопасное имя файла.",
+    "release_named_asset_missing": "В последнем релизе не найден необходимый Windows-архив ModEngine 3.",
     "release_request_failed": "Не удалось получить данные последнего релиза Seamless Co-op.",
     "release_response_invalid": "GitHub Releases API вернул некорректный ответ.",
     "update_version_invalid": "Не удалось сравнить установленную версию с последним релизом.",

@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from sct.mod_loaders import LaunchCommand
+
 try:
     import winreg
 except ImportError:  # pragma: no cover - the application is Windows-only
@@ -205,9 +207,14 @@ class SteamService:
             arguments.append("-silent")
         self._start_process(arguments)
 
-    def launch_game(self, launcher: Path | str) -> None:
-        launcher_path = Path(launcher)
-        arguments = [str(launcher_path)]
+    def launch_game(self, launcher: Path | str | LaunchCommand) -> None:
+        command = (
+            launcher
+            if isinstance(launcher, LaunchCommand)
+            else LaunchCommand(Path(launcher), working_directory=Path(launcher).parent)
+        )
+        launcher_path = command.executable
+        arguments = [str(launcher_path), *command.arguments]
         if launcher_path.suffix.casefold() in {".bat", ".cmd"}:
             arguments = [
                 os.environ.get("COMSPEC", "cmd.exe"),
@@ -215,8 +222,13 @@ class SteamService:
                 "/s",
                 "/c",
                 launcher_path.name,
+                *command.arguments,
             ]
-        self._start_process(arguments, cwd=str(launcher_path.parent))
+        working_directory = command.working_directory or launcher_path.parent
+        options: dict[str, Any] = {"cwd": str(working_directory)}
+        if os.name == "nt":
+            options["creationflags"] = subprocess.CREATE_NO_WINDOW
+        self._start_process(arguments, **options)
 
     @staticmethod
     def _registry_steam_path() -> Path | None:

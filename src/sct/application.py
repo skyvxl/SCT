@@ -11,6 +11,7 @@ from sct.game.runtime import EldenRingRuntime, build_elden_ring_runtime
 from sct.installer import ModInstaller
 from sct.localization import TranslationCatalogError, TranslationService
 from sct.logging_config import configure_logging
+from sct.mod_loaders import ModLoaderManager
 from sct.resource_loader import load_stylesheet
 from sct.runtime_config import RuntimeConfig
 from sct.screenshots import GameWindowCapture
@@ -50,6 +51,14 @@ def build_main_window(
         )
     else:
         backups = backup_manager
+    loader_manager = ModLoaderManager()
+
+    def installer_factory() -> ModInstaller:
+        return ModInstaller(
+            RuntimeConfig.load(),
+            loader_manager=loader_manager,
+        )
+
     window = MainWindow(
         translator,
         build_page_specs(
@@ -58,10 +67,13 @@ def build_main_window(
             steam_service,
             runtime,
             backups,
+            loader_manager,
+            installer_factory,
         ),
         settings_store,
-        lambda: ModInstaller(RuntimeConfig.load()),
+        installer_factory,
         lambda: UpdateService(RuntimeConfig.load()),
+        loader_manager=loader_manager,
     )
     if screenshot_capture is not None:
         screenshot_capture.setParent(window)

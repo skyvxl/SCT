@@ -16,6 +16,7 @@
     "auto_setup": "Automatic Elden Ring Seamless Co-op and ModEngine Setup",
     "check_manager_updates": "Check for Toolkit updates",
     "check_mod_updates": "Check for Elden Ring Seamless Co-op updates",
+    "manage_loaders": "Install or Manage Mod Loaders",
     "about": "About"
   },
   "footer": {
@@ -33,8 +34,17 @@
     "save": "Save",
     "ok": "OK",
     "cancel": "Cancel",
+    "close": "Close",
     "yes": "Yes",
     "no": "No"
+  },
+  "loader": {
+    "me3_recommended": "ModEngine 3 (Recommended)",
+    "me2_legacy": "ModEngine 2 (Legacy)"
+  },
+  "loader_choice": {
+    "title": "Choose Mod Loader",
+    "description": "ModEngine 3 and ModEngine 2 are both installed. Choose the loader to use for this launch. You can set a default loader in Manager Settings."
   },
   "about": {
     "product_name": "Seamless Co-op Toolkit",
@@ -325,6 +335,14 @@
     },
     "modengine": {
       "title": "ModEngine",
+      "default_loader": "Default Mod Loader:",
+      "ask_when_needed": "Ask when both loaders are installed",
+      "manage_loaders": "Install / Remove",
+      "no_game_path": "Select the Elden Ring game folder to manage loaders.",
+      "loader_status": "ModEngine 3: {me3}    •    ModEngine 2: {me2}",
+      "installed": "Installed ({version})",
+      "not_installed": "Not installed",
+      "unknown_version": "unknown version",
       "manager": "ModEngine DLL Manager",
       "description": "Manage your DLL files. ersc.dll cannot be disabled.",
       "error_title": "ModEngine Error",
@@ -366,6 +384,8 @@
     "title": "Automatic Seamless Co-op and ModEngine Setup",
     "instructions": "This setup wizard will help you configure Seamless Co-op with ModEngine.\n\n1. Select your Elden Ring game folder\n2. Set your co-op password\n3. The setup wizard will automatically:\n   - Download and install ModEngine\n   - Download and install Seamless Co-op\n   - Configure all required files\n   - Save your settings",
     "github_nexus_warning": "Important: The GitHub release mirror may be older than the current Nexus Mods release. If Seamless Co-op does not start, install the latest version from Nexus Mods manually.",
+    "loader": "Mod Loader:",
+    "me2_legacy_warning": "ModEngine 2 is obsolete and no longer maintained. Install it only when a mod explicitly requires ME2 and you understand the compatibility limits.",
     "game_path": "Game Folder Path:",
     "game_path_placeholder": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\ELDEN RING\\Game",
     "password": "Co-op Password:",
@@ -375,18 +395,36 @@
     "invalid_game_path": "eldenring.exe was not found in the selected folder.",
     "password_required": "Enter a co-op password.",
     "success_title": "Setup Complete",
-    "success_message": "ModEngine2 and Seamless Co-op {version} were installed successfully.",
+    "success_message": "The selected ModEngine loader and Seamless Co-op {version} were installed successfully.",
     "error_title": "Setup Error",
     "error_message": "Setup could not be completed.\n\n{message}",
     "phases": {
       "release": "Checking the latest Seamless Co-op release…",
-      "download_modengine": "Downloading ModEngine2…",
+      "download_modengine": "Downloading ModEngine…",
       "download_ersc": "Downloading Seamless Co-op…",
       "extract": "Checking and extracting archives…",
       "install": "Installing files…",
       "configure": "Configuring ModEngine and Seamless Co-op…",
       "complete": "Setup complete."
     }
+  },
+  "loader_manager": {
+    "title": "Mod Loader Management",
+    "description": "ModEngine 3 is the recommended loader. ModEngine 2 is kept only for older mods that require it. The loaders are never started together.",
+    "game_path": "Elden Ring folder: {path}",
+    "me2_warning": "Legacy warning: ModEngine 2 is obsolete. Removing a loader does not delete Seamless Co-op, the mod folder, or your ModEngine configuration.",
+    "status": "{name}: {state}",
+    "installed": "Installed ({version})",
+    "not_installed": "Not installed",
+    "unknown_version": "unknown version",
+    "install": "Install",
+    "reinstall": "Reinstall",
+    "remove": "Remove",
+    "remove_title": "Remove Mod Loader",
+    "remove_message": "Remove {name}? Seamless Co-op and user mods will be kept.",
+    "success_title": "Mod Loader Installed",
+    "success_message": "{name} was installed successfully.",
+    "error_title": "Mod Loader Error"
   },
   "updates": {
     "error_title": "Update Error",
@@ -416,6 +454,7 @@
     "release_zip_missing": "The latest Seamless Co-op release does not contain a ZIP archive.",
     "release_zip_ambiguous": "The Seamless Co-op ZIP archive could not be selected unambiguously.",
     "release_asset_name_unsafe": "The release archive has an unsafe file name.",
+    "release_named_asset_missing": "The required ModEngine 3 Windows archive was not found in the latest release.",
     "release_request_failed": "The latest Seamless Co-op release information could not be loaded.",
     "release_response_invalid": "The GitHub Releases API returned an invalid response.",
     "update_version_invalid": "The installed version could not be compared with the latest release.",

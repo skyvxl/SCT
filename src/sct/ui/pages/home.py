@@ -5,12 +5,19 @@ from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QMessageBox, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QDialog, QMessageBox, QPushButton, QVBoxLayout
 
 from sct.localization import TranslationService
+from sct.mod_loaders import (
+    LaunchCommand,
+    LoaderChoiceRequired,
+    LoaderKind,
+    ModLoaderManager,
+)
 from sct.resource_loader import load_optional_icon
 from sct.settings import AppSettings, SettingsStore
 from sct.steam import SteamService
+from sct.ui.dialogs.loader_choice import LoaderChoiceDialog
 from sct.ui.pages.base import LocalizedPage
 
 LOGGER = logging.getLogger("sct.ui.home")
@@ -20,7 +27,12 @@ class LaunchConfigurationError(RuntimeError):
     pass
 
 
-def resolve_launch_target(settings: AppSettings) -> Path:
+def resolve_launch_command(
+        settings: AppSettings,
+        loader_manager: ModLoaderManager,
+        *,
+        selected_loader: LoaderKind | None = None,
+) -> LaunchCommand:
     game_path = settings.mod_path.strip()
     executable_path = settings.game_exe_path.strip()
     if not game_path or not executable_path:
@@ -29,8 +41,22 @@ def resolve_launch_target(settings: AppSettings) -> Path:
     executable = Path(executable_path)
     if not game_directory.is_dir() or not executable.is_file():
         raise LaunchConfigurationError("Game directory or executable does not exist")
-    modengine_launcher = game_directory / "launchmod_eldenring.bat"
-    return modengine_launcher if modengine_launcher.is_file() else executable
+    if selected_loader is not None:
+        if not loader_manager.state(game_directory, selected_loader).installed:
+            raise LaunchConfigurationError("Selected mod loader is not installed")
+        loader = selected_loader
+    else:
+        loader = loader_manager.select_loader(
+            game_directory,
+            settings.default_mod_loader,
+        )
+    if loader is not None:
+        return loader_manager.launch_command(game_directory, loader)
+    return LaunchCommand(executable, working_directory=executable.parent)
+
+
+def resolve_launch_target(settings: AppSettings) -> Path:
+    return resolve_launch_command(settings, ModLoaderManager()).executable
 
 
 class HomePage(LocalizedPage):
@@ -39,11 +65,13 @@ class HomePage(LocalizedPage):
             translator: TranslationService,
             settings_store: SettingsStore,
             steam_service: SteamService,
+            loader_manager: ModLoaderManager | None = None,
     ) -> None:
         super().__init__(translator)
         self.settings_store = settings_store
         self.steam_service = steam_service
-        self._pending_launch: tuple[AppSettings, Path] | None = None
+        self.loader_manager = loader_manager or ModLoaderManager()
+        self._pending_launch: tuple[AppSettings, LaunchCommand] | None = None
         self._steam_wait_attempts = 0
         layout = QVBoxLayout(self)
         layout.addStretch(2)
@@ -72,7 +100,24 @@ class HomePage(LocalizedPage):
     def _launch(self) -> None:
         settings = self.settings_store.load()
         try:
-            launch_target = resolve_launch_target(settings)
+            launch_command = resolve_launch_command(settings, self.loader_manager)
+        except LoaderChoiceRequired:
+            dialog = LoaderChoiceDialog(self.translator, self)
+            if dialog.exec() != QDialog.DialogCode.Accepted or dialog.selected_loader is None:
+                return
+            try:
+                launch_command = resolve_launch_command(
+                    settings,
+                    self.loader_manager,
+                    selected_loader=dialog.selected_loader,
+                )
+            except LaunchConfigurationError:
+                QMessageBox.warning(
+                    self,
+                    self.translator.translate("launch.missing_launcher_title"),
+                    self.translator.translate("launch.missing_launcher_message"),
+                )
+                return
         except LaunchConfigurationError:
             QMessageBox.warning(
                 self,
@@ -83,7 +128,7 @@ class HomePage(LocalizedPage):
         if self.steam_service.is_running():
             if not self._selected_profile_is_active(settings):
                 return
-            self._launch_game(launch_target)
+            self._launch_game(launch_command)
             return
 
         steam_executable = Path(settings.steam_exe_path)
@@ -105,7 +150,7 @@ class HomePage(LocalizedPage):
             LOGGER.exception("Unable to start Steam")
             self._show_launch_error(error)
             return
-        self._pending_launch = (settings, launch_target)
+        self._pending_launch = (settings, launch_command)
         self._steam_wait_attempts = 0
         self.launch_button.setEnabled(False)
         QTimer.singleShot(500, self._wait_for_steam)
@@ -115,12 +160,12 @@ class HomePage(LocalizedPage):
         if pending is None:
             self.launch_button.setEnabled(True)
             return
-        settings, launch_target = pending
+        settings, launch_command = pending
         if self.steam_service.is_running():
             self._pending_launch = None
             self.launch_button.setEnabled(True)
             if self._selected_profile_is_active(settings):
-                self._launch_game(launch_target)
+                self._launch_game(launch_command)
             return
         self._steam_wait_attempts += 1
         if self._steam_wait_attempts >= 30:
@@ -164,9 +209,9 @@ class HomePage(LocalizedPage):
         )
         return False
 
-    def _launch_game(self, launcher: Path) -> None:
+    def _launch_game(self, command: LaunchCommand) -> None:
         try:
-            self.steam_service.launch_game(launcher)
+            self.steam_service.launch_game(command)
         except OSError as error:
             LOGGER.exception("Unable to start Seamless Co-op")
             self._show_launch_error(error)

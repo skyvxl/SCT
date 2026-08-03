@@ -7,18 +7,31 @@ import zipfile
 from pathlib import Path
 
 from sct.installer import InstallerError, ModInstaller
+from sct.mod_loaders import LoaderKind, ModLoaderManager
 from sct.releases import ReleaseAsset
 from sct.runtime_config import RuntimeConfig
 
 
 class FakeReleaseClient:
-    def __init__(self, asset: ReleaseAsset) -> None:
+    def __init__(
+            self,
+            asset: ReleaseAsset,
+            named_asset: ReleaseAsset | None = None,
+    ) -> None:
         self.asset = asset
+        self.named_asset = named_asset
         self.requested_url = ""
+        self.requested_named_asset: tuple[str, str] | None = None
 
     def latest_asset(self, api_url: str) -> ReleaseAsset:
         self.requested_url = api_url
         return self.asset
+
+    def latest_named_asset(self, api_url: str, asset_name: str) -> ReleaseAsset:
+        self.requested_named_asset = (api_url, asset_name)
+        if self.named_asset is None:
+            raise AssertionError("No named release asset was configured")
+        return self.named_asset
 
 
 def write_modengine_archive(path: Path) -> None:
@@ -50,7 +63,106 @@ def write_ersc_archive(path: Path) -> None:
         )
 
 
+def write_me3_archive(path: Path) -> None:
+    with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("bin/me3.exe", "me3")
+        archive.writestr("bin/me3-launcher.exe", "launcher")
+        archive.writestr("bin/me3_mod_host.dll", "host")
+        archive.writestr("eldenring-default.me3", 'profileVersion = "v1"\n')
+
+
 class ModInstallerTests(unittest.TestCase):
+    def test_installs_and_reinstalls_modengine3_without_reinstalling_ersc(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_text("game", encoding="utf-8")
+            me3_archive = root / "me3-windows-amd64.zip"
+            write_me3_archive(me3_archive)
+            client = FakeReleaseClient(
+                ReleaseAsset("unused", "unused.zip", "https://example.invalid/unused"),
+                ReleaseAsset("v0.12.1", me3_archive.name, me3_archive.as_uri()),
+            )
+            manager = ModLoaderManager(root / "runtime", root / "profiles")
+            installer = ModInstaller(
+                RuntimeConfig(
+                    "https://example.invalid/ersc/latest",
+                    "https://example.invalid/me3/latest",
+                ),
+                release_client=client,
+                loader_manager=manager,
+            )
+
+            state = installer.install_loader(game, LoaderKind.MODENGINE3)
+
+            self.assertTrue(state.installed)
+            self.assertEqual(state.version, "v0.12.1")
+            self.assertFalse((game / "SeamlessCoop").exists())
+            self.assertTrue((root / "profiles" / "eldenring-sct.me3").is_file())
+
+    def test_installs_legacy_modengine2_without_replacing_user_mod_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_text("game", encoding="utf-8")
+            (game / "mod").mkdir()
+            (game / "mod" / "user.txt").write_text("keep", encoding="utf-8")
+            me2_archive = root / "me2.zip"
+            write_modengine_archive(me2_archive)
+            installer = ModInstaller(
+                RuntimeConfig("https://example.invalid/ersc/latest"),
+                modengine_url=me2_archive.as_uri(),
+            )
+
+            state = installer.install_loader(game, LoaderKind.MODENGINE2)
+
+            self.assertTrue(state.installed)
+            self.assertTrue((game / "mod" / "user.txt").is_file())
+            self.assertTrue((game / "mod" / "default.txt").is_file())
+            self.assertTrue((game / "config_eldenring.toml").is_file())
+
+    def test_automatic_install_uses_modengine3_by_default(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            (game / "eldenring.exe").write_text("game", encoding="utf-8")
+            ersc_archive = root / "ersc.zip"
+            me3_archive = root / "me3-windows-amd64.zip"
+            write_ersc_archive(ersc_archive)
+            write_me3_archive(me3_archive)
+            client = FakeReleaseClient(
+                ReleaseAsset("v1.9.9", ersc_archive.name, ersc_archive.as_uri()),
+                ReleaseAsset("v0.12.1", me3_archive.name, me3_archive.as_uri()),
+            )
+            manager = ModLoaderManager(root / "runtime", root / "profiles")
+            installer = ModInstaller(
+                RuntimeConfig(
+                    "https://example.invalid/ersc/latest",
+                    "https://example.invalid/me3/latest",
+                ),
+                release_client=client,
+                loader_manager=manager,
+            )
+
+            result = installer.install(game, "password")
+
+            self.assertEqual(result.loader, LoaderKind.MODENGINE3)
+            self.assertTrue((root / "runtime" / "bin" / "me3.exe").is_file())
+            self.assertTrue((root / "profiles" / "eldenring-sct.me3").is_file())
+            self.assertTrue((game / "SeamlessCoop" / "ersc.dll").is_file())
+            self.assertTrue((game / "mod").is_dir())
+            self.assertFalse((game / "modengine2_launcher.exe").exists())
+            self.assertEqual(
+                client.requested_named_asset,
+                (
+                    "https://example.invalid/me3/latest",
+                    "me3-windows-amd64.zip",
+                ),
+            )
+
     def test_updates_only_ersc_and_preserves_existing_settings_and_user_mods(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -151,6 +263,7 @@ class ModInstallerTests(unittest.TestCase):
             result = installer.install(
                 game,
                 "wizard-password",
+                loader=LoaderKind.MODENGINE2,
                 progress=lambda phase, percent: progress.append((phase, percent)),
             )
 
@@ -205,7 +318,7 @@ class ModInstallerTests(unittest.TestCase):
             )
 
             with self.assertRaises(InstallerError):
-                installer.install(game, "password")
+                installer.install(game, "password", loader=LoaderKind.MODENGINE2)
 
             self.assertEqual(
                 broken_config.read_text(encoding="utf-8"),

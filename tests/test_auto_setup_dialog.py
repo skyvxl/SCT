@@ -9,8 +9,9 @@ from PySide6.QtWidgets import QLineEdit
 
 from sct.installer import InstallResult
 from sct.localization import TranslationService
+from sct.mod_loaders import LoaderKind
 from sct.settings import SettingsStore
-from sct.ui.dialogs.auto_setup import AutoSetupDialog
+from sct.ui.dialogs.auto_setup import AutoSetupDialog, InstallWorker
 from tests.qt_helpers import get_qapplication
 
 
@@ -39,6 +40,7 @@ class AutoSetupDialogTests(unittest.TestCase):
                 game,
                 game / "ersc_launcher.exe",
                 game / "mod",
+                LoaderKind.MODENGINE3,
             )
 
             with patch("sct.ui.dialogs.auto_setup.QMessageBox.information"):
@@ -53,7 +55,51 @@ class AutoSetupDialogTests(unittest.TestCase):
             )
             self.assertEqual(persisted.mod_path, str(game))
             self.assertEqual(persisted.game_exe_path, str(game / "ersc_launcher.exe"))
+            self.assertEqual(persisted.default_mod_loader, "me3")
             self.assertEqual(completed, [result])
+
+    def test_recommends_me3_and_warns_when_legacy_me2_is_selected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            settings = SettingsStore(Path(directory) / "settings.ini")
+            settings.ensure_exists()
+            dialog = AutoSetupDialog(
+                TranslationService(locale="en"),
+                settings,
+                installer_factory=lambda: object(),
+            )
+
+            self.assertEqual(dialog.loader_combo.currentData(), LoaderKind.MODENGINE3)
+            self.assertFalse(dialog.legacy_warning.isVisibleTo(dialog))
+            dialog.loader_combo.setCurrentIndex(
+                dialog.loader_combo.findData(LoaderKind.MODENGINE2)
+            )
+            self.assertTrue(dialog.legacy_warning.isVisibleTo(dialog))
+
+    def test_worker_passes_selected_loader_to_installer(self) -> None:
+        calls: list[LoaderKind] = []
+
+        class Installer:
+            @staticmethod
+            def install(
+                    _game: str,
+                    _password: str,
+                    *,
+                    loader: LoaderKind,
+                    progress: object,
+            ) -> object:
+                calls.append(loader)
+                return object()
+
+        worker = InstallWorker(
+            Installer(),
+            "game",
+            "password",
+            LoaderKind.MODENGINE2,
+        )
+
+        worker.run()
+
+        self.assertEqual(calls, [LoaderKind.MODENGINE2])
 
     def test_shows_github_mirror_warning_before_installation(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

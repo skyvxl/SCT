@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from sct.backup_manager import BackupManager
 from sct.game.runtime import EldenRingRuntime
+from sct.installer import ModInstaller
 from sct.localization import TranslationService
+from sct.mod_loaders import ModLoaderManager
 from sct.settings import SettingsStore
 from sct.steam import SteamService
 from sct.ui.page_spec import PageSpec
@@ -20,8 +24,17 @@ def build_page_specs(
         steam_service: SteamService,
         game_runtime: EldenRingRuntime,
         backup_manager: BackupManager,
+        loader_manager: ModLoaderManager | None = None,
+        installer_factory: Callable[[], ModInstaller] | None = None,
 ) -> tuple[PageSpec, ...]:
-    settings_page = SettingsPage(translator, settings_store, steam_service)
+    loaders = loader_manager or ModLoaderManager()
+    settings_page = SettingsPage(
+        translator,
+        settings_store,
+        steam_service,
+        loader_manager=loaders,
+        installer_factory=installer_factory,
+    )
     seamless_page = SeamlessPage(translator, settings_store)
     backups_page = BackupsPage(translator, backup_manager, settings_store)
     settings_page.game_directory_changed.connect(seamless_page.set_game_directory)
@@ -30,7 +43,7 @@ def build_page_specs(
         PageSpec(
             "nav.home",
             "home.png",
-            HomePage(translator, settings_store, steam_service),
+            HomePage(translator, settings_store, steam_service, loaders),
         ),
         PageSpec("nav.seamless", "seamless.png", seamless_page),
         PageSpec(

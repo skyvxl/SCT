@@ -22,7 +22,9 @@ from PySide6.QtWidgets import (
 from sct.errors import localized_error_message
 from sct.installer import InstallResult, ModInstaller
 from sct.localization import TranslationService
+from sct.mod_loaders import LoaderKind
 from sct.settings import SettingsStore
+from sct.ui.widgets import CompactComboBox
 
 InstallerFactory = Callable[[], ModInstaller]
 LOGGER = logging.getLogger("sct.ui.auto_setup")
@@ -34,11 +36,18 @@ class InstallWorker(QObject):
     failed = Signal(object)
     finished = Signal()
 
-    def __init__(self, installer: ModInstaller, game_directory: str, password: str) -> None:
+    def __init__(
+            self,
+            installer: ModInstaller,
+            game_directory: str,
+            password: str,
+            loader: LoaderKind,
+    ) -> None:
         super().__init__()
         self.installer = installer
         self.game_directory = game_directory
         self.password = password
+        self.loader = loader
 
     @Slot()
     def run(self) -> None:
@@ -46,6 +55,7 @@ class InstallWorker(QObject):
             result = self.installer.install(
                 self.game_directory,
                 self.password,
+                loader=self.loader,
                 progress=self.progress.emit,
             )
         except Exception as error:
@@ -92,6 +102,20 @@ class AutoSetupDialog(QDialog):
         self.github_nexus_warning.setWordWrap(True)
         root.addWidget(self.github_nexus_warning)
 
+        self.loader_label = QLabel()
+        self.loader_combo = CompactComboBox()
+        self.loader_combo.setObjectName("autoSetupLoaderCombo")
+        self.loader_combo.addItem("", LoaderKind.MODENGINE3)
+        self.loader_combo.addItem("", LoaderKind.MODENGINE2)
+        self.loader_combo.currentIndexChanged.connect(self._update_loader_warning)
+        root.addWidget(self.loader_label)
+        root.addWidget(self.loader_combo)
+        self.legacy_warning = QLabel()
+        self.legacy_warning.setObjectName("autoSetupLegacyWarning")
+        self.legacy_warning.setProperty("role", "warning")
+        self.legacy_warning.setWordWrap(True)
+        root.addWidget(self.legacy_warning)
+
         self.game_path_label = QLabel()
         self.game_path_edit = QLineEdit()
         self.game_path_edit.setObjectName("autoSetupGamePathEdit")
@@ -127,14 +151,28 @@ class AutoSetupDialog(QDialog):
 
         self.translator.language_changed.connect(lambda _locale: self.retranslate_ui())
         self.retranslate_ui()
+        self.legacy_warning.setVisible(True)
         self.adjustSize()
         self.setFixedSize(self.size())
+        self._update_loader_warning()
 
     def retranslate_ui(self) -> None:
         self.setWindowTitle(self.translator.translate("auto_setup.title"))
         self.instructions.setText(self.translator.translate("auto_setup.instructions"))
         self.github_nexus_warning.setText(
             self.translator.translate("auto_setup.github_nexus_warning")
+        )
+        self.loader_label.setText(self.translator.translate("auto_setup.loader"))
+        self.loader_combo.setItemText(
+            0,
+            self.translator.translate("loader.me3_recommended"),
+        )
+        self.loader_combo.setItemText(
+            1,
+            self.translator.translate("loader.me2_legacy"),
+        )
+        self.legacy_warning.setText(
+            self.translator.translate("auto_setup.me2_legacy_warning")
         )
         self.game_path_label.setText(self.translator.translate("auto_setup.game_path"))
         self.game_path_edit.setPlaceholderText(
@@ -146,6 +184,11 @@ class AutoSetupDialog(QDialog):
             self.translator.translate("auto_setup.password_placeholder")
         )
         self.start_button.setText(self.translator.translate("auto_setup.start"))
+
+    def _update_loader_warning(self, _index: int | None = None) -> None:
+        self.legacy_warning.setVisible(
+            self.loader_combo.currentData() == LoaderKind.MODENGINE2
+        )
 
     def _browse_game_directory(self) -> None:
         selected = QFileDialog.getExistingDirectory(
@@ -182,7 +225,8 @@ class AutoSetupDialog(QDialog):
 
         self._set_running(True)
         self._thread = QThread(self)
-        self._worker = InstallWorker(installer, game_directory, password)
+        loader = LoaderKind(self.loader_combo.currentData())
+        self._worker = InstallWorker(installer, game_directory, password, loader)
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)
         self._worker.progress.connect(self._handle_progress)
@@ -198,6 +242,7 @@ class AutoSetupDialog(QDialog):
         self._running = running
         self.game_path_edit.setEnabled(not running)
         self.password_edit.setEnabled(not running)
+        self.loader_combo.setEnabled(not running)
         self.browse_button.setEnabled(not running)
         self.start_button.setEnabled(not running)
         self.status_label.setVisible(running)
@@ -212,9 +257,14 @@ class AutoSetupDialog(QDialog):
 
     @Slot(object)
     def _handle_success(self, result: InstallResult) -> None:
+        changes: dict[str, object] = {
+            "mod_path": str(result.game_directory),
+            "game_exe_path": str(result.launcher_path),
+        }
+        if result.loader is not None:
+            changes["default_mod_loader"] = result.loader.value
         self.settings_store.update(
-            mod_path=str(result.game_directory),
-            game_exe_path=str(result.launcher_path),
+            **changes,
         )
         self.installation_completed.emit(result)
         if self._thread is not None and self._thread.isRunning():

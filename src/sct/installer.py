@@ -10,6 +10,7 @@ from sct.downloads import download_file, safe_extract_zip
 from sct.errors import LocalizedError
 from sct.ersc_settings import ErscSettingsStore
 from sct.installer_settings import merge_ersc_settings
+from sct.mod_loaders import LoaderKind, LoaderState, ModLoaderManager
 from sct.modengine import ModEngineConfig
 from sct.releases import GitHubReleaseClient, ReleaseAsset
 from sct.runtime_config import RuntimeConfig
@@ -25,6 +26,7 @@ MODENGINE_ITEMS = (
     "modengine2_launcher.exe",
     "launchmod_eldenring.bat",
 )
+MODENGINE3_ASSET_NAME = "me3-windows-amd64.zip"
 ProgressCallback = Callable[[str, int], None]
 
 
@@ -38,6 +40,7 @@ class InstallResult:
     game_directory: Path
     launcher_path: Path
     mod_directory: Path
+    loader: LoaderKind | None = None
 
 
 class FileTransaction:
@@ -153,16 +156,140 @@ class ModInstaller:
             *,
             release_client: GitHubReleaseClient | None = None,
             modengine_url: str = MODENGINE2_URL,
+            loader_manager: ModLoaderManager | None = None,
     ) -> None:
         self.config = config
         self.release_client = release_client or GitHubReleaseClient()
         self.modengine_url = modengine_url
+        self.loader_manager = loader_manager or ModLoaderManager()
+
+    def install_loader(
+            self,
+            game_directory: Path | str,
+            loader: LoaderKind,
+            *,
+            progress: ProgressCallback | None = None,
+    ) -> LoaderState:
+        game = Path(game_directory).expanduser().resolve()
+        if not (game / "eldenring.exe").is_file():
+            raise InstallerError(
+                "installer_game_exe_missing",
+                f"eldenring.exe is missing from the selected directory: {game}",
+            )
+        kind = LoaderKind(loader)
+
+        def emit(phase: str, percent: int) -> None:
+            if progress is not None:
+                progress(phase, max(0, min(percent, 100)))
+
+        transaction: FileTransaction | None = None
+        try:
+            with tempfile.TemporaryDirectory(prefix="sct-loader-install-") as temporary:
+                workspace = Path(temporary)
+                if kind is LoaderKind.MODENGINE3:
+                    emit("release", 0)
+                    release = self.release_client.latest_named_asset(
+                        self.config.me3_release_api_url,
+                        MODENGINE3_ASSET_NAME,
+                    )
+                    archive = workspace / release.name
+                    download_file(
+                        release.download_url,
+                        archive,
+                        expected_digest=release.sha256,
+                        expected_size=release.size,
+                        progress=self._download_progress(
+                            emit,
+                            "download_modengine",
+                            5,
+                            65,
+                        ),
+                    )
+                    emit("extract", 72)
+                    extracted = safe_extract_zip(archive, workspace / "me3")
+                    emit("install", 82)
+                    self.loader_manager.install_me3(extracted, release.tag_name)
+                    (game / "mod").mkdir(exist_ok=True)
+                    emit("configure", 95)
+                    self.loader_manager.write_me3_profile(game)
+                else:
+                    archive = workspace / "modengine2.zip"
+                    download_file(
+                        self.modengine_url,
+                        archive,
+                        progress=self._download_progress(
+                            emit,
+                            "download_modengine",
+                            0,
+                            70,
+                        ),
+                    )
+                    emit("extract", 72)
+                    extracted = safe_extract_zip(archive, workspace / "me2")
+                    me2_root = self._validate_modengine_staging(extracted)
+                    transaction = FileTransaction(game, workspace / "rollback")
+                    try:
+                        emit("install", 82)
+                        for name in MODENGINE_ITEMS:
+                            source = me2_root / name
+                            destination = game / name
+                            if source.is_dir():
+                                transaction.copy_tree(source, destination)
+                            else:
+                                transaction.copy_file(source, destination)
+                        config_path = game / "config_eldenring.toml"
+                        if not config_path.exists():
+                            transaction.copy_file(
+                                me2_root / "config_eldenring.toml",
+                                config_path,
+                            )
+                        emit("configure", 95)
+                        transaction.prepare_existing_file(config_path)
+                        ModEngineConfig(config_path).ensure_ersc()
+                    except Exception:
+                        transaction.rollback()
+                        transaction = None
+                        raise
+                emit("complete", 100)
+                return self.loader_manager.state(game, kind)
+        except Exception as error:
+            if transaction is not None:
+                try:
+                    transaction.rollback()
+                except OSError as rollback_error:
+                    raise InstallerError(
+                        "installer_rollback_failed",
+                        f"Installation rollback failed: {rollback_error}",
+                    ) from error
+            if isinstance(error, InstallerError):
+                raise
+            if isinstance(error, LocalizedError):
+                raise InstallerError(
+                    error.code,
+                    f"Installation failed: {error}",
+                    params=error.params,
+                ) from error
+            raise InstallerError(
+                "installer_unexpected",
+                f"Unexpected installation failure: {error}",
+            ) from error
+
+    def remove_loader(
+            self,
+            game_directory: Path | str,
+            loader: LoaderKind,
+    ) -> LoaderState:
+        game = Path(game_directory).expanduser().resolve()
+        kind = LoaderKind(loader)
+        self.loader_manager.remove(game, kind)
+        return self.loader_manager.state(game, kind)
 
     def install(
             self,
             game_directory: Path | str,
             password: str,
             *,
+            loader: LoaderKind = LoaderKind.MODENGINE3,
             progress: ProgressCallback | None = None,
     ) -> InstallResult:
         game = Path(game_directory).expanduser().resolve()
@@ -176,6 +303,8 @@ class ModInstaller:
                 "installer_password_required",
                 "A co-op password is required",
             )
+        if LoaderKind(loader) is LoaderKind.MODENGINE3:
+            return self._install_with_me3(game, password, progress=progress)
 
         def emit(phase: str, percent: int) -> None:
             if progress is not None:
@@ -248,6 +377,7 @@ class ModInstaller:
                         game_directory=game,
                         launcher_path=game / "ersc_launcher.exe",
                         mod_directory=game / "mod",
+                        loader=LoaderKind.MODENGINE2,
                     )
                 except Exception as error:
                     try:
@@ -258,6 +388,111 @@ class ModInstaller:
                             "installer_rollback_failed",
                             f"Installation rollback failed: {rollback_error}",
                         ) from error
+                    transaction = None
+                    raise
+        except Exception as error:
+            if transaction is not None:
+                try:
+                    transaction.rollback()
+                except OSError as rollback_error:
+                    raise InstallerError(
+                        "installer_rollback_failed",
+                        f"Installation rollback failed: {rollback_error}",
+                    ) from error
+            if isinstance(error, InstallerError):
+                raise
+            if isinstance(error, LocalizedError):
+                raise InstallerError(
+                    error.code,
+                    f"Installation failed: {error}",
+                    params=error.params,
+                ) from error
+            raise InstallerError(
+                "installer_unexpected",
+                f"Unexpected installation failure: {error}",
+            ) from error
+
+    def _install_with_me3(
+            self,
+            game: Path,
+            password: str,
+            *,
+            progress: ProgressCallback | None,
+    ) -> InstallResult:
+        def emit(phase: str, percent: int) -> None:
+            if progress is not None:
+                progress(phase, max(0, min(percent, 100)))
+
+        transaction: FileTransaction | None = None
+        try:
+            emit("release", 0)
+            ersc_release = self.release_client.latest_asset(
+                self.config.ersc_release_api_url
+            )
+            me3_release = self.release_client.latest_named_asset(
+                self.config.me3_release_api_url,
+                MODENGINE3_ASSET_NAME,
+            )
+            with tempfile.TemporaryDirectory(prefix="sct-install-") as temporary:
+                workspace = Path(temporary)
+                me3_archive = workspace / me3_release.name
+                ersc_archive = workspace / ersc_release.name
+                download_file(
+                    me3_release.download_url,
+                    me3_archive,
+                    expected_digest=me3_release.sha256,
+                    expected_size=me3_release.size,
+                    progress=self._download_progress(emit, "download_modengine", 5, 30),
+                )
+                download_file(
+                    ersc_release.download_url,
+                    ersc_archive,
+                    expected_digest=ersc_release.sha256,
+                    expected_size=ersc_release.size,
+                    progress=self._download_progress(emit, "download_ersc", 35, 30),
+                )
+                emit("extract", 68)
+                me3_extract = safe_extract_zip(me3_archive, workspace / "me3")
+                ersc_extract = safe_extract_zip(ersc_archive, workspace / "ersc")
+                self._validate_ersc_staging(ersc_extract)
+
+                staged_settings = ersc_extract / "SeamlessCoop" / "ersc_settings.ini"
+                existing_settings = game / "SeamlessCoop" / "ersc_settings.ini"
+                merge_ersc_settings(
+                    staged_settings,
+                    existing_settings if existing_settings.is_file() else None,
+                    staged_settings,
+                    password,
+                )
+
+                transaction = FileTransaction(game, workspace / "rollback")
+                try:
+                    emit("install", 76)
+                    transaction.copy_file(
+                        ersc_extract / "ersc_launcher.exe",
+                        game / "ersc_launcher.exe",
+                    )
+                    transaction.copy_tree(
+                        ersc_extract / "SeamlessCoop",
+                        game / "SeamlessCoop",
+                    )
+                    self.loader_manager.install_me3(
+                        me3_extract,
+                        me3_release.tag_name,
+                    )
+                    (game / "mod").mkdir(exist_ok=True)
+                    emit("configure", 94)
+                    self.loader_manager.write_me3_profile(game)
+                    emit("complete", 100)
+                    return InstallResult(
+                        ersc_version=ersc_release.tag_name,
+                        game_directory=game,
+                        launcher_path=game / "ersc_launcher.exe",
+                        mod_directory=game / "mod",
+                        loader=LoaderKind.MODENGINE3,
+                    )
+                except Exception:
+                    transaction.rollback()
                     transaction = None
                     raise
         except Exception as error:

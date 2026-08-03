@@ -21,6 +21,7 @@ class AppSettings:
     auto_check_updates: bool = True
     run_steam_silently: bool = False
     steam_id: str = ""
+    default_mod_loader: str = ""
     save_file_type: str = "ER0000.co2"
     backup_directory: str = ""
     enable_sounds: bool = True

@@ -77,7 +77,35 @@ def select_release_asset(payload: Mapping[str, Any]) -> ReleaseAsset:
             "Unable to select one Seamless Co-op ZIP asset",
         )
 
-    selected = candidates[0]
+    return _build_release_asset(payload, candidates[0])
+
+
+def select_named_release_asset(
+        payload: Mapping[str, Any],
+        asset_name: str,
+) -> ReleaseAsset:
+    raw_assets = payload.get("assets")
+    assets = raw_assets if isinstance(raw_assets, list) else []
+    candidates = [
+        asset
+        for asset in assets
+        if isinstance(asset, Mapping)
+           and asset.get("name") == asset_name
+           and isinstance(asset.get("browser_download_url"), str)
+    ]
+    if len(candidates) != 1:
+        raise ReleaseError(
+            "release_named_asset_missing",
+            f"The latest release does not contain {asset_name}",
+            params={"asset": asset_name},
+        )
+    return _build_release_asset(payload, candidates[0])
+
+
+def _build_release_asset(
+        payload: Mapping[str, Any],
+        selected: Mapping[str, Any],
+) -> ReleaseAsset:
     selected_name = str(selected["name"])
     if (
             PurePosixPath(selected_name).name != selected_name
@@ -112,6 +140,9 @@ class GitHubReleaseClient:
 
     def latest_asset(self, api_url: str) -> ReleaseAsset:
         return select_release_asset(self._request_payload(api_url))
+
+    def latest_named_asset(self, api_url: str, asset_name: str) -> ReleaseAsset:
+        return select_named_release_asset(self._request_payload(api_url), asset_name)
 
     def _request_payload(self, api_url: str) -> Mapping[str, Any]:
         request = Request(

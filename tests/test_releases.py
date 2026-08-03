@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import unittest
 
-from sct.releases import ReleaseError, parse_release_info, select_release_asset
+from sct.releases import (
+    ReleaseError,
+    parse_release_info,
+    select_named_release_asset,
+    select_release_asset,
+)
 
 
 class ReleaseSelectionTests(unittest.TestCase):
@@ -106,6 +111,38 @@ class ReleaseSelectionTests(unittest.TestCase):
                 }
             )
         self.assertEqual(caught.exception.code, "release_asset_name_unsafe")
+
+    def test_selects_exact_named_asset_for_modengine3(self) -> None:
+        asset = select_named_release_asset(
+            {
+                "tag_name": "v0.12.1",
+                "assets": [
+                    {
+                        "name": "me3-linux-amd64.tar.xz",
+                        "browser_download_url": "https://example.invalid/linux.tar.xz",
+                    },
+                    {
+                        "name": "me3-windows-amd64.zip",
+                        "browser_download_url": "https://example.invalid/me3.zip",
+                        "size": 321,
+                    },
+                ],
+            },
+            "me3-windows-amd64.zip",
+        )
+
+        self.assertEqual(asset.tag_name, "v0.12.1")
+        self.assertEqual(asset.download_url, "https://example.invalid/me3.zip")
+        self.assertEqual(asset.size, 321)
+
+    def test_missing_exact_named_asset_is_reported(self) -> None:
+        with self.assertRaises(ReleaseError) as caught:
+            select_named_release_asset(
+                {"tag_name": "v0.12.1", "assets": []},
+                "me3-windows-amd64.zip",
+            )
+
+        self.assertEqual(caught.exception.code, "release_named_asset_missing")
 
 
 if __name__ == "__main__":

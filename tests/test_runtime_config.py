@@ -12,22 +12,28 @@ class RuntimeConfigTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             dotenv = Path(directory) / ".env"
             dotenv.write_text(
-                "ERSC_RELEASE_API_URL=https://example.invalid/from-file\n",
+                "ERSC_RELEASE_API_URL=https://example.invalid/from-file\n"
+                "ME3_RELEASE_API_URL=https://example.invalid/me3-file\n",
                 encoding="utf-8",
             )
 
             config = RuntimeConfig.load(
-                environment={"ERSC_RELEASE_API_URL": "https://example.invalid/from-env"},
+                environment={
+                    "ERSC_RELEASE_API_URL": "https://example.invalid/from-env",
+                    "ME3_RELEASE_API_URL": "https://example.invalid/me3-env",
+                },
                 search_paths=(dotenv,),
             )
 
         self.assertEqual(config.ersc_release_api_url, "https://example.invalid/from-env")
+        self.assertEqual(config.me3_release_api_url, "https://example.invalid/me3-env")
 
     def test_dotenv_is_used_when_environment_value_is_missing(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             dotenv = Path(directory) / ".env"
             dotenv.write_text(
-                '# comment\nERSC_RELEASE_API_URL="https://example.invalid/releases/latest"\n',
+                '# comment\nERSC_RELEASE_API_URL="https://example.invalid/releases/latest"\n'
+                'ME3_RELEASE_API_URL="https://example.invalid/me3/latest"\n',
                 encoding="utf-8",
             )
 
@@ -37,6 +43,7 @@ class RuntimeConfigTests(unittest.TestCase):
             config.ersc_release_api_url,
             "https://example.invalid/releases/latest",
         )
+        self.assertEqual(config.me3_release_api_url, "https://example.invalid/me3/latest")
 
     def test_missing_release_url_is_reported(self) -> None:
         with self.assertRaises(RuntimeConfigError) as caught:

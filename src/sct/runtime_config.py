@@ -10,6 +10,10 @@ from urllib.parse import urlparse
 from sct.errors import LocalizedError
 
 ERSC_RELEASE_API_URL = "ERSC_RELEASE_API_URL"
+ME3_RELEASE_API_URL = "ME3_RELEASE_API_URL"
+DEFAULT_ME3_RELEASE_API_URL = (
+    "https://api.github.com/repos/garyttierney/me3/releases/latest"
+)
 
 
 class RuntimeConfigError(LocalizedError):
@@ -48,6 +52,7 @@ def _read_dotenv(path: Path) -> dict[str, str]:
 @dataclass(frozen=True, slots=True)
 class RuntimeConfig:
     ersc_release_api_url: str
+    me3_release_api_url: str = DEFAULT_ME3_RELEASE_API_URL
 
     @classmethod
     def load(
@@ -63,10 +68,27 @@ class RuntimeConfig:
                 release_url = _read_dotenv(Path(path)).get(ERSC_RELEASE_API_URL, "").strip()
                 if release_url:
                     break
+        me3_release_url = environment_values.get(ME3_RELEASE_API_URL, "").strip()
+        if not me3_release_url:
+            for path in default_dotenv_paths() if search_paths is None else search_paths:
+                me3_release_url = _read_dotenv(Path(path)).get(ME3_RELEASE_API_URL, "").strip()
+                if me3_release_url:
+                    break
+        me3_release_url = me3_release_url or DEFAULT_ME3_RELEASE_API_URL
         parsed = urlparse(release_url)
-        if not release_url or parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        me3_parsed = urlparse(me3_release_url)
+        if (
+                not release_url
+                or parsed.scheme not in {"http", "https"}
+                or not parsed.netloc
+                or me3_parsed.scheme not in {"http", "https"}
+                or not me3_parsed.netloc
+        ):
             raise RuntimeConfigError(
                 "runtime_config_invalid",
-                f"{ERSC_RELEASE_API_URL} must contain a valid GitHub Releases API URL",
+                "Release API settings must contain valid HTTP URLs",
             )
-        return cls(ersc_release_api_url=release_url)
+        return cls(
+            ersc_release_api_url=release_url,
+            me3_release_api_url=me3_release_url,
+        )

@@ -33,6 +33,7 @@ class SettingsStoreTests(unittest.TestCase):
             self.assertEqual(parser["Settings"]["save_file_type"], "ER0000.co2")
             self.assertEqual(parser["Settings"]["run_steam_silently"], "0")
             self.assertEqual(parser["Settings"]["fps_target"], "60")
+            self.assertEqual(parser["Settings"]["default_mod_loader"], "")
             self.assertIn("sleep_between_saves", parser["Settings"])
 
     def test_round_trip_preserves_values_and_unknown_options(self) -> None:
@@ -49,10 +50,12 @@ class SettingsStoreTests(unittest.TestCase):
                 run_steam_silently=True,
                 steam_id="76561198000000000",
                 fps_target=144,
+                default_mod_loader="me3",
                 save_backup_key="100663379",
             )
 
             self.assertEqual(updated.fps_target, 144)
+            self.assertEqual(store.load().default_mod_loader, "me3")
             self.assertTrue(store.load().run_steam_silently)
             parser = configparser.ConfigParser(interpolation=None)
             parser.read(path, encoding="utf-8")

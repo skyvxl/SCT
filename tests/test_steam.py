@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from sct.mod_loaders import LaunchCommand
 from sct.steam import (
     STEAM_ID64_BASE,
     SteamService,
@@ -93,6 +95,7 @@ class SteamTests(unittest.TestCase):
             [r"C:\Games\ELDEN RING\Game\ersc_launcher.exe"],
         )
         self.assertEqual(game_call.kwargs["cwd"], r"C:\Games\ELDEN RING\Game")
+        self.assertEqual(game_call.kwargs["creationflags"], subprocess.CREATE_NO_WINDOW)
 
     def test_batch_launch_uses_command_processor_and_game_directory(self) -> None:
         popen = Mock()
@@ -110,6 +113,29 @@ class SteamTests(unittest.TestCase):
                 "launchmod_eldenring.bat",
             ],
             cwd=r"C:\Games\ELDEN RING\Game",
+            creationflags=subprocess.CREATE_NO_WINDOW,
+        )
+
+    def test_launch_command_passes_me3_arguments_without_a_console(self) -> None:
+        popen = Mock()
+        service = SteamService(start_process=popen)
+        command = LaunchCommand(
+            Path(r"C:\SCT\runtimes\me3\bin\me3.exe"),
+            ("launch", "--profile", r"C:\SCT\profiles\eldenring-sct.me3"),
+            Path(r"C:\SCT\runtimes\me3"),
+        )
+
+        service.launch_game(command)
+
+        popen.assert_called_once_with(
+            [
+                r"C:\SCT\runtimes\me3\bin\me3.exe",
+                "launch",
+                "--profile",
+                r"C:\SCT\profiles\eldenring-sct.me3",
+            ],
+            cwd=r"C:\SCT\runtimes\me3",
+            creationflags=subprocess.CREATE_NO_WINDOW,
         )
 
 
