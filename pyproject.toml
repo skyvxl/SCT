@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seamless-coop-toolkit"
-version = "0.2.0"
+version = "0.3.0"
 description = "Windows toolkit for Elden Ring Seamless Co-op."
 authors = [{ name = "skyvxl" }]
 readme = "README.md"
