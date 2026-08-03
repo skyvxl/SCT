@@ -4,7 +4,7 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl, Signal, Slot
+from PySide6.QtCore import QProcess, Qt, QTimer, QUrl, Signal, Slot
 from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
@@ -32,7 +32,7 @@ from sct.fps_patcher import EldenRingFpsPatcher
 from sct.installer import InstallResult, ModInstaller
 from sct.localization import TranslationService
 from sct.mod_loaders import LoaderKind, ModLoaderManager
-from sct.modengine import ModEngineConfig, ModEngineConfigError
+from sct.modengine import ModEngine3Profile, ModEngineConfig, ModEngineConfigError
 from sct.resource_loader import load_optional_icon, optional_resource_path
 from sct.settings import AppSettings, SettingsStore
 from sct.shortcuts import deserialize_key_sequence, serialize_key_sequence
@@ -245,15 +245,36 @@ class SettingsPage(LocalizedPage):
         manager_copy.addWidget(modengine_description)
         manager_card_layout.addLayout(manager_copy, 1)
 
+        manager_actions = QHBoxLayout()
+        manager_actions.setContentsMargins(0, 0, 0, 0)
+        manager_actions.setSpacing(6)
+
+        self.open_me3_config_button = action_button(
+            self,
+            "settings.modengine.open_me3_config",
+            "openMe3ConfigButton",
+        )
+        self.open_me3_config_button.setEnabled(False)
+        manager_actions.addWidget(self.open_me3_config_button)
+
+        self.open_me2_config_button = action_button(
+            self,
+            "settings.modengine.open_me2_config",
+            "openMe2ConfigButton",
+        )
+        self.open_me2_config_button.setEnabled(False)
+        manager_actions.addWidget(self.open_me2_config_button)
+
         self.open_mod_folder_button = action_button(
             self,
             "common.open_folder",
             "openModFolderButton",
         )
         self.open_mod_folder_button.setEnabled(False)
-        manager_card_layout.addWidget(
-            self.open_mod_folder_button,
-            alignment=Qt.AlignmentFlag.AlignVCenter,
+        manager_actions.addWidget(self.open_mod_folder_button)
+        manager_card_layout.addLayout(
+            manager_actions,
+            0,
         )
         modengine_layout.addWidget(manager_card)
 
@@ -442,11 +463,11 @@ class SettingsPage(LocalizedPage):
         self.language_combo.currentIndexChanged.connect(self._change_language)
         self.browse_game_button.clicked.connect(self._browse_game_directory)
         self.game_path_edit.editingFinished.connect(self._save_game_directory)
+        self.open_me3_config_button.clicked.connect(self._open_me3_config)
+        self.open_me2_config_button.clicked.connect(self._open_me2_config)
         self.open_mod_folder_button.clicked.connect(self._open_mod_folder)
         self.default_loader_combo.currentIndexChanged.connect(
-            lambda _index: self._persist(
-                default_mod_loader=str(self.default_loader_combo.currentData() or "")
-            )
+            self._change_default_loader
         )
         self.manage_loaders_button.clicked.connect(self._show_loader_manager)
         self.browse_launcher_button.clicked.connect(self._browse_launcher)
@@ -556,6 +577,25 @@ class SettingsPage(LocalizedPage):
         if directory.is_dir():
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(directory)))
 
+    def _open_me3_config(self) -> None:
+        self._open_config_file(self.loader_manager.me3_profile_path)
+
+    def _open_me2_config(self) -> None:
+        game_text = self.game_path_edit.text().strip()
+        if game_text:
+            self._open_config_file(Path(game_text) / "config_eldenring.toml")
+
+    @staticmethod
+    def _open_config_file(path: Path) -> None:
+        if path.is_file():
+            QProcess.startDetached("notepad.exe", [str(path)])
+
+    def _change_default_loader(self, _index: int) -> None:
+        self._persist(
+            default_mod_loader=str(self.default_loader_combo.currentData() or "")
+        )
+        self.refresh_modengine()
+
     def refresh_modengine(self) -> None:
         game_text = self.game_path_edit.text().strip()
         game_directory = Path(game_text) if game_text else None
@@ -572,16 +612,55 @@ class SettingsPage(LocalizedPage):
         if game_directory is None:
             return
         config = ModEngineConfig.from_game_directory(game_directory)
+        me3_installed = self.loader_manager.state(
+            game_directory,
+            LoaderKind.MODENGINE3,
+        ).installed
+        me2_installed = self.loader_manager.state(
+            game_directory,
+            LoaderKind.MODENGINE2,
+        ).installed
+        me3_profile = ModEngine3Profile(self.loader_manager.me3_profile_path)
+        preferred_loader = str(self.default_loader_combo.currentData() or "")
+        show_me3 = (
+                me3_installed
+                and me3_profile.path.is_file()
+                and (
+                        preferred_loader != LoaderKind.MODENGINE2.value
+                        or not me2_installed
+                )
+        )
+        if show_me3:
+            try:
+                dlls = me3_profile.list_dlls()
+                if any(dll.locked and not dll.enabled for dll in dlls):
+                    me3_profile.set_enabled(
+                        next(dll.path for dll in dlls if dll.locked),
+                        True,
+                    )
+                    dlls = me3_profile.list_dlls()
+            except (OSError, ModEngineConfigError):
+                if (game_directory / "SeamlessCoop" / "ersc.dll").is_file():
+                    self._add_modengine_badge("ersc.dll", active=True, locked=True)
+                    self.modengine_badges_layout.addStretch(1)
+                LOGGER.debug("ModEngine3 profile is not available", exc_info=True)
+                return
+            for dll in dlls:
+                self._add_modengine_badge(
+                    Path(dll.path).name,
+                    active=dll.enabled,
+                    locked=dll.locked,
+                    path=dll.path,
+                    loader=LoaderKind.MODENGINE3,
+                )
+            self.modengine_badges_layout.addStretch(1)
+            return
         try:
             dlls = config.list_dlls()
             if any(dll.locked and not dll.enabled for dll in dlls):
                 config.ensure_ersc()
                 dlls = config.list_dlls()
         except (OSError, ModEngineConfigError):
-            me3_installed = self.loader_manager.state(
-                game_directory,
-                LoaderKind.MODENGINE3,
-            ).installed
             if me3_installed and (game_directory / "SeamlessCoop" / "ersc.dll").is_file():
                 self._add_modengine_badge("ersc.dll", active=True, locked=True)
                 self.modengine_badges_layout.addStretch(1)
@@ -613,6 +692,7 @@ class SettingsPage(LocalizedPage):
             active: bool,
             locked: bool,
             path: str | None = None,
+            loader: LoaderKind = LoaderKind.MODENGINE2,
     ) -> None:
         badge = QPushButton(name)
         badge.setObjectName("modEngineDllBadge")
@@ -621,14 +701,16 @@ class SettingsPage(LocalizedPage):
         badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         if not locked and path is not None:
             badge.clicked.connect(
-                lambda _checked=False, dll_path=path, enabled=active: (
-                    self._toggle_modengine_dll(dll_path, not enabled)
+                lambda _checked=False, dll_path=path, enabled=active, dll_loader=loader: (
+                    self._toggle_modengine_dll(dll_loader, dll_path, not enabled)
                 )
             )
         self.modengine_badges_layout.addWidget(badge)
         self.modengine_badges.append(badge)
 
     def _refresh_loader_status(self, game_directory: Path | None) -> None:
+        self.open_me3_config_button.setEnabled(False)
+        self.open_me2_config_button.setEnabled(False)
         if game_directory is None:
             self.loader_status_label.setText(
                 self.translator.translate("settings.modengine.no_game_path")
@@ -636,6 +718,12 @@ class SettingsPage(LocalizedPage):
             return
         me3 = self.loader_manager.state(game_directory, LoaderKind.MODENGINE3)
         me2 = self.loader_manager.state(game_directory, LoaderKind.MODENGINE2)
+        self.open_me3_config_button.setEnabled(
+            me3.installed and self.loader_manager.me3_profile_path.is_file()
+        )
+        self.open_me2_config_button.setEnabled(
+            me2.installed and (game_directory / "config_eldenring.toml").is_file()
+        )
         self.loader_status_label.setText(
             self.translator.translate(
                 "settings.modengine.loader_status",
@@ -674,12 +762,23 @@ class SettingsPage(LocalizedPage):
         self.default_loader_combo.blockSignals(False)
         self.refresh_modengine()
 
-    def _toggle_modengine_dll(self, path: str, enabled: bool) -> None:
+    def _toggle_modengine_dll(
+            self,
+            loader: LoaderKind,
+            path: str,
+            enabled: bool,
+    ) -> None:
         game_text = self.game_path_edit.text().strip()
         if not game_text:
             return
         try:
-            ModEngineConfig.from_game_directory(game_text).set_enabled(path, enabled)
+            if loader is LoaderKind.MODENGINE3:
+                ModEngine3Profile(self.loader_manager.me3_profile_path).set_enabled(
+                    path,
+                    enabled,
+                )
+            else:
+                ModEngineConfig.from_game_directory(game_text).set_enabled(path, enabled)
         except (OSError, ModEngineConfigError) as error:
             LOGGER.exception("Unable to update ModEngine configuration")
             QMessageBox.warning(

@@ -52,16 +52,20 @@ uv run python -m unittest discover -s tests -v
 
 ## Windows build
 
-The release build needs the item files in `data/items` and a valid
-`ERSC_RELEASE_API_URL` in `.env`.
+The Toolkit release build needs a valid `ERSC_RELEASE_API_URL` in `.env`. It does not need the item data.
 
 ```powershell
 uv sync --group build
 uv run python tools/build_release.py
 ```
 
-The portable program folder, program ZIP, and separate `items.zip` are created in `dist`. Extract `items.zip` next to
-the program so the `items` folder is beside `Seamless Co-op Toolkit.exe`.
+The program folder and its versioned ZIP are created in `dist`.
+
+To create `dist/items.zip` locally after changing files in `data/items`, run:
+
+```powershell
+uv run python tools/build_items.py
+```
 
 ## Credits
 

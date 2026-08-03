@@ -18,6 +18,15 @@ _DLL_LINE = re.compile(
     r"(?P<ending>\r?\n)?$"
 )
 _INLINE_STRING = re.compile(r'"(?P<raw>(?:\\.|[^"])*)"')
+_ME3_NATIVE_SECTION = re.compile(
+    r"^[ \t]*\[\[[ \t]*natives[ \t]*]][ \t]*(?:#.*)?(?:\r?\n)?$",
+    re.IGNORECASE,
+)
+_ME3_ENABLED_LINE = re.compile(
+    r"^(?P<indent>[ \t]*)enabled[ \t]*=[ \t]*(?:true|false)"
+    r"(?P<suffix>[ \t]*(?:#.*)?)(?P<ending>\r?\n)?$",
+    re.IGNORECASE,
+)
 
 
 class ModEngineConfigError(LocalizedError):
@@ -33,6 +42,10 @@ class ExternalDll:
 
 def _normalized_dll_path(value: str) -> str:
     return value.replace("/", "\\").casefold()
+
+
+def _is_ersc_dll(value: str) -> bool:
+    return _normalized_dll_path(value).rsplit("\\", 1)[-1] == "ersc.dll"
 
 
 def _decode_toml_string(raw_value: str) -> str:
@@ -219,6 +232,130 @@ class ModEngineConfig:
 
     def _atomic_write(self, document: str) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                    "w",
+                    encoding="utf-8",
+                    newline="",
+                    delete=False,
+                    dir=self.path.parent,
+                    prefix=f".{self.path.name}.",
+                    suffix=".tmp",
+            ) as temporary:
+                temporary.write(document)
+                temporary.flush()
+                os.fsync(temporary.fileno())
+                temporary_path = Path(temporary.name)
+            os.replace(temporary_path, self.path)
+        finally:
+            if temporary_path is not None and temporary_path.exists():
+                temporary_path.unlink()
+
+
+class ModEngine3Profile:
+    def __init__(self, path: Path | str) -> None:
+        self.path = Path(path)
+
+    def list_dlls(self) -> tuple[ExternalDll, ...]:
+        if not self.path.is_file():
+            return ()
+        try:
+            document = tomllib.loads(self.path.read_text(encoding="utf-8-sig"))
+        except (OSError, tomllib.TOMLDecodeError) as error:
+            raise ModEngineConfigError(
+                "modengine_profile_invalid",
+                "The ModEngine 3 profile is invalid",
+            ) from error
+        natives = document.get("natives", [])
+        if not isinstance(natives, list):
+            raise ModEngineConfigError(
+                "modengine_profile_invalid",
+                "The ModEngine 3 natives list is invalid",
+            )
+        parsed: list[ExternalDll] = []
+        for native in natives:
+            if not isinstance(native, dict):
+                raise ModEngineConfigError(
+                    "modengine_profile_invalid",
+                    "The ModEngine 3 native entry is invalid",
+                )
+            path = native.get("path")
+            enabled = native.get("enabled", True)
+            if not isinstance(path, str) or not isinstance(enabled, bool):
+                raise ModEngineConfigError(
+                    "modengine_profile_invalid",
+                    "The ModEngine 3 native entry is invalid",
+                )
+            parsed.append(
+                ExternalDll(
+                    path=path,
+                    enabled=enabled,
+                    locked=_is_ersc_dll(path),
+                )
+            )
+        return tuple(parsed)
+
+    def set_enabled(self, path: str, enabled: bool) -> None:
+        if _is_ersc_dll(path) and not enabled:
+            raise ModEngineConfigError(
+                "modengine_ersc_required",
+                "ersc.dll is required and cannot be disabled",
+            )
+        lines = self.path.read_text(encoding="utf-8-sig").splitlines(keepends=True)
+        dlls = self.list_dlls()
+        wanted = _normalized_dll_path(path)
+        native_index = next(
+            (
+                index
+                for index, dll in enumerate(dlls)
+                if _normalized_dll_path(dll.path) == wanted
+            ),
+            None,
+        )
+        if native_index is None:
+            raise ModEngineConfigError(
+                "modengine_dll_not_found",
+                f"DLL is not present in the ModEngine 3 profile: {path}",
+                params={"path": path},
+            )
+        if dlls[native_index].enabled == enabled:
+            return
+
+        sections = [
+            index
+            for index, line in enumerate(lines)
+            if _ME3_NATIVE_SECTION.match(line)
+        ]
+        if native_index >= len(sections):
+            raise ModEngineConfigError(
+                "modengine_profile_invalid",
+                "The ModEngine 3 native sections do not match the profile data",
+            )
+        start = sections[native_index]
+        end = sections[native_index + 1] if native_index + 1 < len(sections) else len(lines)
+        value = "true" if enabled else "false"
+        for line_index in range(start + 1, end):
+            match = _ME3_ENABLED_LINE.match(lines[line_index])
+            if match is None:
+                continue
+            lines[line_index] = (
+                f"{match.group('indent')}enabled = {value}"
+                f"{match.group('suffix')}{match.group('ending') or ''}"
+            )
+            self._atomic_write("".join(lines))
+            return
+
+        newline = ModEngineConfig._newline(lines)
+        insertion_index = end
+        while insertion_index > start + 1 and not lines[insertion_index - 1].strip():
+            insertion_index -= 1
+        if insertion_index and not lines[insertion_index - 1].endswith(("\n", "\r")):
+            lines[insertion_index - 1] += newline
+        lines.insert(insertion_index, f"enabled = {value}{newline}")
+        self._atomic_write("".join(lines))
+
+    def _atomic_write(self, document: str) -> None:
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(

@@ -7,6 +7,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import tomllib
 import zipfile
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -14,12 +15,12 @@ from importlib.metadata import Distribution, PackageNotFoundError, distribution
 from pathlib import Path
 from urllib.parse import urlparse
 
-from sct.items import REQUIRED_ITEM_FILES
-from sct.version import DISPLAY_VERSION
+from sct.version import DISPLAY_VERSION, DISTRIBUTION_VERSION
 
 APP_NAME = "Seamless Co-op Toolkit"
 RELEASE_PREFIX = "Seamless-Co-op-Toolkit"
 ERSC_RELEASE_API_URL = "ERSC_RELEASE_API_URL"
+STABLE_VERSION_PATTERN = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 
 LICENSE_DISTRIBUTIONS = (
     "PyInstaller",
@@ -41,12 +42,10 @@ class ReleaseLayout:
     project_root: Path
     build_root: Path
     bundle_dir: Path
-    items_source: Path
     dist_root: Path
     release_name: str
     release_dir: Path
     archive_path: Path
-    items_archive_path: Path
 
     @classmethod
     def from_project(cls, project_root: Path | str) -> ReleaseLayout:
@@ -58,12 +57,10 @@ class ReleaseLayout:
             project_root=root,
             build_root=build_root,
             bundle_dir=build_root / "dist" / APP_NAME,
-            items_source=root / "data" / "items",
             dist_root=dist_root,
             release_name=release_name,
             release_dir=dist_root / release_name,
             archive_path=dist_root / f"{release_name}.zip",
-            items_archive_path=dist_root / "items.zip",
         )
 
 
@@ -75,17 +72,32 @@ class LicenseComponent:
     license_files: tuple[Path, ...]
 
 
-def validate_items(source: Path | str) -> tuple[Path, ...]:
-    root = Path(source)
-    missing = tuple(
-        root / filename
-        for filename in REQUIRED_ITEM_FILES
-        if not (root / filename).is_file()
-    )
-    if missing:
-        names = ", ".join(path.name for path in missing)
-        raise ReleaseBuildError(f"Required item data is missing: {names}")
-    return tuple(root / filename for filename in REQUIRED_ITEM_FILES)
+def validate_project_version(project_root: Path | str) -> str:
+    root = Path(project_root)
+    pyproject_path = root / "pyproject.toml"
+    try:
+        with pyproject_path.open("rb") as pyproject_file:
+            project_version = tomllib.load(pyproject_file)["project"]["version"]
+    except (OSError, KeyError, tomllib.TOMLDecodeError) as error:
+        raise ReleaseBuildError(
+            f"Unable to read project version from {pyproject_path}"
+        ) from error
+
+    versions = {
+        "pyproject.toml": project_version,
+        "DISPLAY_VERSION": DISPLAY_VERSION,
+        "DISTRIBUTION_VERSION": DISTRIBUTION_VERSION,
+    }
+    if any(not isinstance(value, str) for value in versions.values()) or len(
+            set(versions.values())
+    ) != 1:
+        details = ", ".join(f"{name}={value}" for name, value in versions.items())
+        raise ReleaseBuildError(f"Toolkit versions do not match: {details}")
+    if STABLE_VERSION_PATTERN.fullmatch(project_version) is None:
+        raise ReleaseBuildError(
+            f"Release version must use stable major.minor.patch syntax: {project_version}"
+        )
+    return project_version
 
 
 def _dotenv_release_url(path: Path) -> str:
@@ -105,8 +117,8 @@ def _dotenv_release_url(path: Path) -> str:
 
 
 def _resolve_release_url(
-    project_root: Path | str,
-    environment: Mapping[str, str] | None,
+        project_root: Path | str,
+        environment: Mapping[str, str] | None,
 ) -> str:
     values = os.environ if environment is None else environment
     release_url = values.get(ERSC_RELEASE_API_URL, "").strip()
@@ -121,9 +133,9 @@ def _resolve_release_url(
 
 
 def write_release_environment(
-    destination: Path | str,
-    project_root: Path | str,
-    environment: Mapping[str, str] | None = None,
+        destination: Path | str,
+        project_root: Path | str,
+        environment: Mapping[str, str] | None = None,
 ) -> None:
     release_url = _resolve_release_url(project_root, environment)
     path = Path(destination)
@@ -138,8 +150,8 @@ def _remove_release_directory(path: Path, dist_root: Path) -> None:
     resolved_path = path.resolve()
     resolved_root = dist_root.resolve()
     if (
-        resolved_path.parent != resolved_root
-        or not resolved_path.name.startswith(f"{RELEASE_PREFIX}-")
+            resolved_path.parent != resolved_root
+            or not resolved_path.name.startswith(f"{RELEASE_PREFIX}-")
     ):
         raise ReleaseBuildError(f"Refusing to remove unsafe release path: {path}")
     if resolved_path.exists():
@@ -147,9 +159,9 @@ def _remove_release_directory(path: Path, dist_root: Path) -> None:
 
 
 def assemble_release(
-    layout: ReleaseLayout,
-    *,
-    environment: Mapping[str, str] | None = None,
+        layout: ReleaseLayout,
+        *,
+        environment: Mapping[str, str] | None = None,
 ) -> Path:
     executable = layout.bundle_dir / f"{APP_NAME}.exe"
     if not executable.is_file():
@@ -208,8 +220,8 @@ def _safe_component_directory(name: str) -> str:
 
 
 def write_third_party_licenses(
-    destination: Path | str,
-    components: Sequence[LicenseComponent],
+        destination: Path | str,
+        components: Sequence[LicenseComponent],
 ) -> tuple[Path, ...]:
     root = Path(destination)
     root.mkdir(parents=True, exist_ok=True)
@@ -252,8 +264,8 @@ def _distribution_license_files(package: Distribution) -> tuple[Path, ...]:
         name = Path(text).name.casefold()
         parts = {part.casefold() for part in Path(text).parts}
         if (
-            "licenses" not in parts
-            and not name.startswith(("license", "copying", "notice"))
+                "licenses" not in parts
+                and not name.startswith(("license", "copying", "notice"))
         ):
             continue
         path = Path(package.locate_file(entry)).resolve()
@@ -277,9 +289,9 @@ def _installed_license_components() -> tuple[LicenseComponent, ...]:
                 name=metadata.get("Name", distribution_name),
                 version=metadata.get("Version", package.version),
                 declared_license=(
-                    metadata.get("License-Expression")
-                    or metadata.get("License")
-                    or "Not declared"
+                        metadata.get("License-Expression")
+                        or metadata.get("License")
+                        or "Not declared"
                 ),
                 license_files=_distribution_license_files(package),
             )
@@ -314,26 +326,22 @@ def collect_third_party_licenses(destination: Path | str) -> tuple[Path, ...]:
 
 
 def build_release(
-    project_root: Path | str,
-    *,
-    environment: Mapping[str, str] | None = None,
-) -> tuple[Path, Path, Path]:
+        project_root: Path | str,
+        *,
+        environment: Mapping[str, str] | None = None,
+) -> tuple[Path, Path]:
+    validate_project_version(project_root)
     layout = ReleaseLayout.from_project(project_root)
-    validate_items(layout.items_source)
     _resolve_release_url(layout.project_root, environment)
     run_pyinstaller(layout)
     release_dir = assemble_release(layout, environment=environment)
     archive_path = create_release_zip(release_dir, layout.archive_path)
-    items_archive_path = create_items_zip(
-        layout.items_source,
-        layout.items_archive_path,
-    )
-    return release_dir, archive_path, items_archive_path
+    return release_dir, archive_path
 
 
 def create_release_zip(
-    release_dir: Path | str,
-    destination: Path | str,
+        release_dir: Path | str,
+        destination: Path | str,
 ) -> Path:
     source = Path(release_dir).resolve()
     archive = Path(destination).resolve()
@@ -343,10 +351,10 @@ def create_release_zip(
     if archive.exists():
         archive.unlink()
     with zipfile.ZipFile(
-        archive,
-        "w",
-        compression=zipfile.ZIP_DEFLATED,
-        compresslevel=9,
+            archive,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+            compresslevel=9,
     ) as release_zip:
         for path in sorted(source.rglob("*")):
             if path.is_file():
@@ -357,45 +365,15 @@ def create_release_zip(
     return archive
 
 
-def create_items_zip(
-    items_dir: Path | str,
-    destination: Path | str,
-) -> Path:
-    source = Path(items_dir).resolve()
-    files = validate_items(source)
-    archive = Path(destination).resolve()
-    archive.parent.mkdir(parents=True, exist_ok=True)
-    if archive.exists():
-        archive.unlink()
-    with zipfile.ZipFile(
-        archive,
-        "w",
-        compression=zipfile.ZIP_DEFLATED,
-        compresslevel=9,
-    ) as items_zip:
-        for path in sorted(files, key=lambda value: value.name):
-            items_zip.write(
-                path,
-                f"items/{path.name}",
-                compress_type=(
-                    zipfile.ZIP_STORED
-                    if path.suffix.casefold() == ".zip"
-                    else zipfile.ZIP_DEFLATED
-                ),
-            )
-    return archive
-
-
 def main() -> int:
     project_root = Path(__file__).resolve().parents[1]
     try:
-        release_dir, archive_path, items_archive_path = build_release(project_root)
+        release_dir, archive_path = build_release(project_root)
     except ReleaseBuildError as error:
         print(f"Release build failed: {error}", file=sys.stderr)
         return 1
     print(f"Release directory: {release_dir}")
     print(f"Release archive: {archive_path}")
-    print(f"Item data archive: {items_archive_path}")
     return 0
 
 

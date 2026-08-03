@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sct.modengine import ModEngineConfig, ModEngineConfigError
+from sct.modengine import ModEngine3Profile, ModEngineConfig, ModEngineConfigError
 
 
 class ModEngineConfigTests(unittest.TestCase):
@@ -85,6 +85,53 @@ class ModEngineConfigTests(unittest.TestCase):
             self.assertTrue(config.list_dlls()[1].enabled)
             with self.assertRaises(ModEngineConfigError):
                 config.set_enabled(r"SeamlessCoop\ersc.dll", False)
+
+
+class ModEngine3ProfileTests(unittest.TestCase):
+    def test_lists_all_native_dlls_and_their_enabled_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "eldenring-sct.me3"
+            path.write_text(
+                'profileVersion = "v1"\n\n'
+                "[[natives]]\n"
+                "path = 'C:/Game/SeamlessCoop/ersc.dll'\n\n"
+                "[[natives]]\n"
+                "path = 'C:/Game/mod/QuestPath/QuestPath.dll'\n"
+                "enabled = false\n",
+                encoding="utf-8",
+            )
+
+            dlls = ModEngine3Profile(path).list_dlls()
+
+        self.assertEqual(
+            [(dll.path, dll.enabled, dll.locked) for dll in dlls],
+            [
+                ("C:/Game/SeamlessCoop/ersc.dll", True, True),
+                ("C:/Game/mod/QuestPath/QuestPath.dll", False, False),
+            ],
+        )
+
+    def test_toggles_native_dll_without_overwriting_other_profile_settings(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "eldenring-sct.me3"
+            path.write_text(
+                'profileVersion = "v1"\n'
+                'savefile = "custom.co2"\n\n'
+                "[[natives]]\n"
+                "path = 'C:/Game/SeamlessCoop/ersc.dll'\n\n"
+                "[[natives]]\n"
+                "path = 'C:/Game/mod/QuestPath/QuestPath.dll'\n",
+                encoding="utf-8",
+            )
+            profile = ModEngine3Profile(path)
+
+            profile.set_enabled("C:/Game/mod/QuestPath/QuestPath.dll", False)
+            self.assertFalse(profile.list_dlls()[1].enabled)
+            self.assertIn('savefile = "custom.co2"', path.read_text(encoding="utf-8"))
+            profile.set_enabled("C:/Game/mod/QuestPath/QuestPath.dll", True)
+            self.assertTrue(profile.list_dlls()[1].enabled)
+            with self.assertRaises(ModEngineConfigError):
+                profile.set_enabled("C:/Game/SeamlessCoop/ersc.dll", False)
 
 
 if __name__ == "__main__":

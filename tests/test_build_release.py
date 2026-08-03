@@ -4,19 +4,28 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
 
+import tools.build_release as release_builder
 from tools.build_release import (
-    REQUIRED_ITEM_FILES,
     LicenseComponent,
     ReleaseBuildError,
     ReleaseLayout,
     assemble_release,
-    create_items_zip,
+    build_release,
     create_release_zip,
-    validate_items,
     write_release_environment,
     write_third_party_licenses,
 )
+
+
+def write_project_version(root: Path, version: str) -> None:
+    (root / "pyproject.toml").write_text(
+        "[project]\n"
+        'name = "seamless-coop-toolkit"\n'
+        f'version = "{version}"\n',
+        encoding="utf-8",
+    )
 
 
 class ReleaseBuildTests(unittest.TestCase):
@@ -29,18 +38,93 @@ class ReleaseBuildTests(unittest.TestCase):
             "Seamless-Co-op-Toolkit-0.2.0-win64",
         )
 
-    def test_validate_items_reports_all_missing_release_files(self) -> None:
+    def test_project_version_accepts_matching_stable_versions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
-            items = Path(temporary_directory)
-            (items / "Weapons.csv").write_text("ID,en\n", encoding="utf-8")
+            root = Path(temporary_directory)
+            write_project_version(root, "0.3.0")
 
-            with self.assertRaises(ReleaseBuildError) as raised:
-                validate_items(items)
+            with (
+                patch.object(release_builder, "DISPLAY_VERSION", "0.3.0"),
+                patch.object(
+                    release_builder,
+                    "DISTRIBUTION_VERSION",
+                    "0.3.0",
+                    create=True,
+                ),
+            ):
+                version = release_builder.validate_project_version(root)
+
+        self.assertEqual(version, "0.3.0")
+
+    def test_project_version_rejects_mismatched_sources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            write_project_version(root, "0.3.0")
+
+            with (
+                patch.object(release_builder, "DISPLAY_VERSION", "0.3.0"),
+                patch.object(
+                    release_builder,
+                    "DISTRIBUTION_VERSION",
+                    "0.2.0",
+                    create=True,
+                ),
+                self.assertRaises(ReleaseBuildError) as raised,
+            ):
+                release_builder.validate_project_version(root)
 
         message = str(raised.exception)
-        self.assertNotIn("Weapons.csv", message)
-        self.assertIn("Ammunitions.csv", message)
-        self.assertIn("images.zip", message)
+        self.assertIn("pyproject.toml=0.3.0", message)
+        self.assertIn("DISPLAY_VERSION=0.3.0", message)
+        self.assertIn("DISTRIBUTION_VERSION=0.2.0", message)
+
+    def test_project_version_rejects_non_stable_version(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            write_project_version(root, "0.3.0-beta.1")
+
+            with (
+                patch.object(release_builder, "DISPLAY_VERSION", "0.3.0-beta.1"),
+                patch.object(
+                    release_builder,
+                    "DISTRIBUTION_VERSION",
+                    "0.3.0-beta.1",
+                    create=True,
+                ),
+                self.assertRaises(ReleaseBuildError) as raised,
+            ):
+                release_builder.validate_project_version(root)
+
+        self.assertIn("stable major.minor.patch", str(raised.exception))
+
+    @patch("tools.build_release.collect_third_party_licenses")
+    @patch("tools.build_release.run_pyinstaller")
+    def test_build_release_succeeds_without_item_data(
+            self,
+            run_pyinstaller,
+            _collect_third_party_licenses,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            write_project_version(root, "0.2.0")
+            layout = ReleaseLayout.from_project(root)
+            layout.bundle_dir.mkdir(parents=True)
+            (layout.bundle_dir / "Seamless Co-op Toolkit.exe").write_bytes(b"exe")
+            (root / "LICENSE").write_text("MIT\n", encoding="utf-8")
+            run_pyinstaller.return_value = layout.bundle_dir
+
+            release_dir, archive = build_release(
+                root,
+                environment={
+                    "ERSC_RELEASE_API_URL": "https://example.invalid/releases",
+                },
+            )
+
+            self.assertEqual(release_dir, layout.release_dir)
+            self.assertEqual(archive, layout.archive_path)
+            self.assertTrue(archive.is_file())
+            self.assertFalse((root / "data" / "items").exists())
+            self.assertFalse((root / "dist" / "items.zip").exists())
 
     def test_release_environment_uses_ci_value_without_copying_other_secrets(
             self,
@@ -137,25 +221,6 @@ class ReleaseBuildTests(unittest.TestCase):
                         "Seamless-Co-op-Toolkit-0.2.0-win64/"
                         "Seamless Co-op Toolkit.exe"
                     ],
-                )
-
-    def test_items_zip_has_extractable_items_root_and_required_files(self) -> None:
-        with tempfile.TemporaryDirectory() as temporary_directory:
-            root = Path(temporary_directory)
-            source = root / "source"
-            source.mkdir()
-            for filename in REQUIRED_ITEM_FILES:
-                (source / filename).write_bytes(filename.encode())
-            (source / ".gitignore").write_text("*\n", encoding="utf-8")
-            destination = root / "items.zip"
-
-            archive = create_items_zip(source, destination)
-
-            self.assertEqual(archive, destination)
-            with zipfile.ZipFile(archive) as items_zip:
-                self.assertEqual(
-                    items_zip.namelist(),
-                    [f"items/{filename}" for filename in sorted(REQUIRED_ITEM_FILES)],
                 )
 
     def test_third_party_license_bundle_uses_safe_component_directories(

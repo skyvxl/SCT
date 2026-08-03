@@ -118,6 +118,8 @@ class ModLoaderManager:
     def write_me3_profile(self, game_directory: Path | str) -> Path:
         game = Path(game_directory).expanduser().resolve()
         profile = self.me3_profile_path
+        if profile.is_file():
+            return profile
         profile.parent.mkdir(parents=True, exist_ok=True)
         mod_path = (game / "mod").as_posix()
         ersc_path = (game / "SeamlessCoop" / "ersc.dll").as_posix()

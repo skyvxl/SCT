@@ -135,6 +135,27 @@ class ModLoaderManagerTests(unittest.TestCase):
             )
             self.assertEqual(command.working_directory, root / "runtime")
 
+    def test_existing_me3_profile_is_preserved_for_manual_configuration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            game = root / "Game"
+            game.mkdir()
+            manager = ModLoaderManager(root / "runtime", root / "profiles")
+            profile = manager.me3_profile_path
+            profile.parent.mkdir(parents=True)
+            custom_profile = (
+                'profileVersion = "v1"\n'
+                'savefile = "custom.co2"\n\n'
+                '[[supports]]\n'
+                'game = "eldenring"\n'
+            )
+            profile.write_text(custom_profile, encoding="utf-8")
+
+            returned_profile = manager.write_me3_profile(game)
+
+            self.assertEqual(returned_profile, profile)
+            self.assertEqual(profile.read_text(encoding="utf-8"), custom_profile)
+
     def test_removing_me2_preserves_user_mods_ersc_and_configuration(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

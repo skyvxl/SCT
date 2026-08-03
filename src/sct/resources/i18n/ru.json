@@ -345,8 +345,10 @@
       "unknown_version": "версия неизвестна",
       "manager": "ModEngine DLL Manager",
       "description": "Управляйте своими библиотеками DLL. ersc.dll нельзя отключить.",
+      "open_me3_config": "Конфиг ME3",
+      "open_me2_config": "Конфиг ME2",
       "error_title": "Ошибка ModEngine",
-      "error_message": "Не удалось изменить config_eldenring.toml.\n\n{message}"
+      "error_message": "Не удалось изменить конфигурацию ModEngine.\n\n{message}"
     },
     "fps": {
       "title": "Разблокировка FPS",
@@ -481,6 +483,7 @@
     "modengine_external_dlls_missing": "В config_eldenring.toml отсутствует массив external_dlls.",
     "modengine_dll_not_found": "Библиотека не найдена в external_dlls: {path}.",
     "modengine_array_unclosed": "Массив external_dlls в config_eldenring.toml не закрыт.",
+    "modengine_profile_invalid": "Профиль ModEngine 3 повреждён или содержит неподдерживаемые параметры.",
     "modengine_update_failed": "Не удалось изменить config_eldenring.toml.",
     "fps_game_directory_missing": "Сначала укажите папку с игрой.",
     "fps_executable_missing": "В выбранной папке не найден eldenring.exe.",

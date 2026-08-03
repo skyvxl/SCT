@@ -345,8 +345,10 @@
       "unknown_version": "unknown version",
       "manager": "ModEngine DLL Manager",
       "description": "Manage your DLL files. ersc.dll cannot be disabled.",
+      "open_me3_config": "ME3 Config",
+      "open_me2_config": "ME2 Config",
       "error_title": "ModEngine Error",
-      "error_message": "Could not update config_eldenring.toml.\n\n{message}"
+      "error_message": "Could not update the ModEngine configuration.\n\n{message}"
     },
     "fps": {
       "title": "FPS Unlock",
@@ -481,6 +483,7 @@
     "modengine_external_dlls_missing": "The external_dlls array is missing from config_eldenring.toml.",
     "modengine_dll_not_found": "The library was not found in external_dlls: {path}.",
     "modengine_array_unclosed": "The external_dlls array in config_eldenring.toml is not closed.",
+    "modengine_profile_invalid": "The ModEngine 3 profile is damaged or contains unsupported values.",
     "modengine_update_failed": "config_eldenring.toml could not be updated.",
     "fps_game_directory_missing": "Select the game folder first.",
     "fps_executable_missing": "eldenring.exe was not found in the selected folder.",
